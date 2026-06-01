@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Athens Transit Gap Entry",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "station", "station_en", "lines", "gap_type", "title", "description", "entry_point", "destination", "severity", "status"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "^(M1|M2|M3|TRAM|BUS|ISAP|PROAST)-[A-Z]{2,6}-\\d{3}$",
+        "description": "Unique ID: LINE-STATIONCODE-NNN"
+      },
+      "station": {
+        "type": "string",
+        "description": "Station name in Greek"
+      },
+      "station_en": {
+        "type": "string",
+        "description": "Station name in English (official transliteration)"
+      },
+      "lines": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["M1", "M2", "M3", "TRAM", "BUS", "ISAP", "PROAST"]
+        },
+        "minItems": 1
+      },
+      "gap_type": {
+        "type": "string",
+        "enum": ["elevator", "alt-route", "exit-only", "fare-free", "unstaffed", "other"],
+        "description": "Type of inspection gap"
+      },
+      "title": {
+        "type": "string",
+        "description": "Short descriptive title of the gap"
+      },
+      "description": {
+        "type": "string",
+        "description": "Full description of the bypass method"
+      },
+      "entry_point": {
+        "type": "string",
+        "description": "Specific entry point (elevator label, exit letter, etc.)"
+      },
+      "destination": {
+        "type": "string",
+        "description": "Where the bypass leads to"
+      },
+      "severity": {
+        "type": "string",
+        "enum": ["high", "med", "low"],
+        "description": "high = very easy, no real risk; med = requires timing/luck; low = edge case"
+      },
+      "cameras_present": {
+        "type": ["boolean", "null"],
+        "description": "Whether CCTV covers the gap. null = unknown"
+      },
+      "staff_presence": {
+        "type": ["string", "null"],
+        "enum": ["always", "sometimes", "rarely", "never", null],
+        "description": "Staff presence at the gap point"
+      },
+      "time_sensitivity": {
+        "type": ["string", "null"],
+        "description": "e.g. 'off-peak only', 'weekends', 'after 22:00'. null = applies at all times"
+      },
+      "last_verified": {
+        "type": ["string", "null"],
+        "description": "Month + year last confirmed active, e.g. '2025-05'. null = unverified"
+      },
+      "status": {
+        "type": "string",
+        "enum": ["active", "patched", "unverified"],
+        "description": "Current status of this gap"
+      },
+      "coords": {
+        "type": ["object", "null"],
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "notes": {
+        "type": "string",
+        "description": "Additional observations"
+      },
+      "source": {
+        "type": "string",
+        "description": "Where this entry came from (e.g. GitHub username, 'initial-seed')"
+      }
+    }
+  }
+}
