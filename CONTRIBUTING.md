@@ -34,7 +34,7 @@
 | Τύπος | Περιγραφή |
 |-------|-----------|
 | `elevator` | Ασανσέρ που βγάζει πριν/μετά/παρακάμπτοντας τις μπάρες |
-| `alt-route` | Φυσική διαδρομή (διάδρομοι, σκάλες) που παρακάμπτει τουρνικέ |
+| `alt-route` | Φυσική διαδρομή (διάδρομοι, σκάλες) που παρακάμπτει τις μπάρες |
 | `exit-only` | Πόρτα/μπάρα εξόδου που μπορεί να χρησιμοποιηθεί ως είσοδος |
 | `fare-free` | Ζώνη/αποβάθρα προσβάσιμη χωρίς επικύρωση |
 | `unstaffed` | Σημείο εισόδου χωρίς προσωπικό σε ορισμένες ώρες |
@@ -64,11 +64,31 @@
 
 Examples:
 - `M2-SYN-001` → M2, Syntagma, first entry
-- `M3-CHA-002` → M3, Chalandri, second entry
+- `M1-OMO-002` → M1, Omonia, second entry
+- `TRAM-FAL-001` → Tram, Faliro, first entry
 
 Station code = first 3–6 uppercase letters of the English name.
 
-### PR title format
+### Severity values
+
+| Value | Means |
+|-------|-------|
+| `high` | Very easy, no real risk of getting checked |
+| `med`  | Requires timing or luck |
+| `low`  | Edge case, rarely works |
+
+### Gap type values
+
+| Type | Description |
+|------|-------------|
+| `elevator` | Elevator that exits before, after, or bypassing the fare gates |
+| `alt-route` | Physical path (corridors, stairs) that bypasses the fare gates |
+| `exit-only` | Exit door/gate that can be used as an entrance |
+| `fare-free` | Zone or platform reachable without validating |
+| `unstaffed` | Entry point with no staff at certain hours |
+| `other` | Anything else |
+
+### Pull Request title
 
 `[LINE] Station — short description`
 

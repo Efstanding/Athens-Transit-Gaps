@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athens Transit Gaps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0e;
+    --bg2: #161616;
+    --bg3: #1e1e1e;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #e8e8e8;
+    --muted: #666;
+    --muted2: #888;
+    --m1: #4ade80;
+    --m2: #f87171;
+    --m3: #60a5fa;
+    --proast: #a78bfa;
+    --high: #f87171;
+    --med: #fbbf24;
+    --low: #4ade80;
+    --active: #4ade80;
+    --patched: #f87171;
+    --unverified: #fbbf24;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 2rem 1.5rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .header-left h1 {
+    font-family: var(--mono);
+    font-size: clamp(18px, 3vw, 26px);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .header-left p {
+    color: var(--muted2);
+    font-size: 13px;
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .stats span { color: var(--text); font-weight: 500; }
+
+  .controls {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-right: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  button.pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
+    transition: all 0.1s;
+    letter-spacing: 0.02em;
+  }
+
+  button.pill:hover { border-color: #555; color: var(--text); }
+  button.pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  button.pill.m1.active { background: var(--m1); border-color: var(--m1); color: #000; }
+  button.pill.m2.active { background: var(--m2); border-color: var(--m2); color: #000; }
+  button.pill.m3.active { background: var(--m3); border-color: var(--m3); color: #000; }
+  button.pill.proast.active { background: var(--proast); border-color: var(--proast); color: #000; }
+
+  .search-wrap {
+    margin-left: auto;
+  }
+
+  input#search {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 3px;
+    width: 200px;
+    outline: none;
+  }
+
+  input#search:focus { border-color: #555; }
+  input#search::placeholder { color: var(--muted); }
+
+  .count-bar {
+    padding: 8px 2rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg);
+  }
+
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  th:hover { color: var(--text); }
+  th.sorted { color: var(--text); }
+
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  tr:hover td { background: var(--bg2); }
+
+  .id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    white-space: nowrap;
+  }
+
+  .station-name {
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  .station-en {
+    font-size: 11px;
+    color: var(--muted2);
+    font-family: var(--mono);
+    margin-top: 2px;
+  }
+
+  .line-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+
+  .line-tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 2px;
+    margin: 2px 2px 0 0;
+    white-space: nowrap;
+  }
+
+  .tag-M1 { background: rgba(74,222,128,0.12); color: var(--m1); }
+  .tag-M2 { background: rgba(248,113,113,0.12); color: var(--m2); }
+  .tag-M3 { background: rgba(96,165,250,0.12); color: var(--m3); }
+  .tag-PROAST { background: rgba(167,139,250,0.12); color: var(--proast); }
+  .tag-ISAP { background: rgba(167,139,250,0.12); color: var(--proast); }
+
+  .type-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    color: var(--muted2);
+    white-space: nowrap;
+  }
+
+  .sev {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .sev-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .sev-high .sev-dot { background: var(--high); }
+  .sev-med .sev-dot { background: var(--med); }
+  .sev-low .sev-dot { background: var(--low); }
+  .sev-high { color: var(--high); }
+  .sev-med { color: var(--med); }
+  .sev-low { color: var(--low); }
+
+  .status-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .status-active { background: rgba(74,222,128,0.12); color: var(--active); }
+  .status-patched { background: rgba(248,113,113,0.12); color: var(--patched); }
+  .status-unverified { background: rgba(251,191,36,0.12); color: var(--unverified); }
+
+  .desc {
+    font-size: 12px;
+    color: var(--muted2);
+    max-width: 360px;
+    line-height: 1.5;
+  }
+
+  .entry-point {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    max-width: 180px;
+  }
+
+  .verified {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 4rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  footer a { color: var(--muted2); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  @media (max-width: 700px) {
+    header, .controls { padding: 1rem; }
+    td, th { padding: 10px 10px; }
+    .desc { max-width: 200px; }
+    .search-wrap { width: 100%; }
+    input#search { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>athens-transit-gaps</h1>
+    <p>crowdsourced inspection bypass points — OASA network</p>
+  </div>
+  <div class="stats" id="header-stats">
+    <div>entries <span id="stat-total">—</span></div>
+    <div>stations <span id="stat-stations">—</span></div>
+    <div>active <span id="stat-active">—</span></div>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="filter-group">
+    <span class="filter-label">line</span>
+    <button class="pill active" data-line="all" onclick="setLine(this)">all</button>
+    <button class="pill m1" data-line="M1" onclick="setLine(this)">M1</button>
+    <button class="pill m2" data-line="M2" onclick="setLine(this)">M2</button>
+    <button class="pill m3" data-line="M3" onclick="setLine(this)">M3</button>
+    <button class="pill proast" data-line="PROAST" onclick="setLine(this)">proast</button>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">type</span>
+    <button class="pill active" data-type="all" onclick="setType(this)">all</button>
+    <button class="pill" data-type="elevator" onclick="setType(this)">elevator</button>
+    <button class="pill" data-type="alt-route" onclick="setType(this)">alt-route</button>
+    <button class="pill" data-type="fare-free" onclick="setType(this)">fare-free</button>
+    <button class="pill" data-type="unstaffed" onclick="setType(this)">unstaffed</button>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">status</span>
+    <button class="pill active" data-status="all" onclick="setStatus(this)">all</button>
+    <button class="pill" data-status="active" onclick="setStatus(this)">active</button>
+    <button class="pill" data-status="unverified" onclick="setStatus(this)">unverified</button>
+    <button class="pill" data-status="patched" onclick="setStatus(this)">patched</button>
+  </div>
+  <div class="search-wrap">
+    <input id="search" type="text" placeholder="search station, description..." oninput="render()" />
+  </div>
+</div>
+
+<div class="count-bar" id="count-bar">loading...</div>
+
+<div style="overflow-x: auto;">
+<table>
+  <thead>
+    <tr>
+      <th onclick="sortBy('id')">ID</th>
+      <th onclick="sortBy('station')">Station</th>
+      <th>Line</th>
+      <th>Type</th>
+      <th onclick="sortBy('severity')">Severity</th>
+      <th>Description</th>
+      <th>Entry point</th>
+      <th onclick="sortBy('status')">Status</th>
+      <th onclick="sortBy('last_verified')">Verified</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+</div>
+
+<div id="empty" class="empty" style="display:none">no entries match your filters</div>
+
+<footer>
+  <span>data: <a href="data/gaps.json">gaps.json</a></span>
+  <span>schema: <a href="data/schema.json">schema.json</a></span>
+  <span><a href="CONTRIBUTING.md">how to contribute</a></span>
+  <span><a href="https://github.com/Efstanding/athens-transit-gaps">github</a></span>
+</footer>
+
+<script>
+let gaps = [];
+let lineFilter = 'all';
+let typeFilter = 'all';
+let statusFilter = 'all';
+let sortKey = null;
+let sortDir = 1;
+
+fetch('data/gaps.json')
+  .then(r => r.json())
+  .then(data => {
+    gaps = data;
+    const total = gaps.length;
+    const stations = new Set(gaps.map(g => g.station)).size;
+    const active = gaps.filter(g => g.status === 'active').length;
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-stations').textContent = stations;
+    document.getElementById('stat-active').textContent = active;
+    render();
+  });
+
+function setLine(btn) {
+  document.querySelectorAll('[data-line]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  lineFilter = btn.dataset.line;
+  render();
+}
+
+function setType(btn) {
+  document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  typeFilter = btn.dataset.type;
+  render();
+}
+
+function setStatus(btn) {
+  document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  statusFilter = btn.dataset.status;
+  render();
+}
+
+function sortBy(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = 1; }
+  render();
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+
+  let filtered = gaps.filter(g => {
+    if (lineFilter !== 'all' && !g.lines.includes(lineFilter)) return false;
+    if (typeFilter !== 'all' && g.gap_type !== typeFilter) return false;
+    if (statusFilter !== 'all' && g.status !== statusFilter) return false;
+    if (q && !( g.station.toLowerCase().includes(q) ||
+                g.station_en.toLowerCase().includes(q) ||
+                g.description.toLowerCase().includes(q) ||
+                g.title.toLowerCase().includes(q) ||
+                g.entry_point.toLowerCase().includes(q) )) return false;
+    return true;
+  });
+
+  if (sortKey) {
+    filtered.sort((a, b) => {
+      const av = a[sortKey] || '';
+      const bv = b[sortKey] || '';
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+
+  document.getElementById('count-bar').textContent =
+    `showing ${filtered.length} of ${gaps.length} entries`;
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(g => {
+    const lineTags = g.lines.map(l => `<span class="line-tag tag-${l}">${l}</span>`).join('');
+    const sev = `<div class="sev sev-${g.severity}"><div class="sev-dot"></div>${g.severity}</div>`;
+    const status = `<span class="status-tag status-${g.status}">${g.status}</span>`;
+    const desc = g.description.length > 120 ? g.description.slice(0, 120) + '…' : g.description;
+    return `<tr>
+      <td><div class="id">${g.id}</div></td>
+      <td><div class="station-name">${g.station}</div><div class="station-en">${g.station_en}</div></td>
+      <td>${lineTags}</td>
+      <td><span class="type-tag">${g.gap_type}</span></td>
+      <td>${sev}</td>
+      <td><div class="desc">${desc}</div></td>
+      <td><div class="entry-point">${g.entry_point}</div></td>
+      <td>${status}</td>
+      <td><div class="verified">${g.last_verified || '—'}</div></td>
+    </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
