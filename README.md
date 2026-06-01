@@ -10,9 +10,19 @@
 
 ## 🇬🇷 Ελληνικά
 
+### ⚠️ SCOPE - Σκοπός αυτού του αποθετηρίου
+
+Αυτό το αποθετήριο είναι ένα **κατευθυνόμενο, ηθικό έργο ερευνητικής ασφάλειας**. Σκοπός του είναι να:
+
+- **Αναδείξει αδύναμα σημεία** στις διαδικασίες ελέγχου εισιτηρίων του ΟΑΣΑ
+- **Παρέχει δεδομένα για βελτίωση** — δεν είναι εδώ για εκμετάλλευση
+- **Ενισχύσει την ασφάλεια** του συστήματος δημόσιας συγκοινωνίας της Αθήνας
+
+**Δεν ενθαρρύνουμε, δεν στηρίζουμε, και δεν ευθύνεσθε για οποιαδήποτε παραβατική χρήση αυτών των πληροφοριών.** Το αποθετήριο αυτό υπάρχει αποκλειστικά για δημόσια ασφάλεια και βελτίωση υποδομών.
+
 ### Τι είναι αυτό;
 
-Ένα ανοιχτό, crowdsourced αποθετήριο που καταγράφει **σημεία παράκαμψης ελέγχου εισιτηρίων** στο δίκτυο του ΟΑΣΑ — στοχεύοντας να χαρτογραφήσει κενά υποδομής που επιτρέπουν την παράκαμψη του ελέγχου.
+Ένα ανοιχτό, crowdsourced αποθετήριο που καταγράφει **σημεία παράκαμψης ελέγχου εισιτηρίων** στο δίκτυο του ΟΑΣΑ — π.χ. ανελκυστήρες χωρίς επίβλεψη, εναλλακτικές διαδρομές εισόδου, σταθμοί χωρίς προσωπικό κατά ορισμένες ώρες.
 
 ### Πώς να δεις τα δεδομένα
 
@@ -61,9 +71,19 @@
 
 ## 🇬🇧 English
 
+### ⚠️ SCOPE — Purpose of this repository
+
+This repository is a **controlled, ethical security research initiative**. Its purpose is to:
+
+- **Identify weaknesses** in OASA ticket inspection processes
+- **Provide data for improvement** — this is not here for exploitation
+- **Strengthen security** of Athens' public transit system
+
+**We do not encourage, endorse, or take responsibility for any unlawful use of this information.** This repository exists solely for public safety and infrastructure improvement.
+
 ### What is this?
 
-An open, crowdsourced repository documenting **ticket inspection bypass points** across the OASA transit network (Metro, ISAP, Tram, Bus). The goal is to **map infrastructure gaps** — elevators that don't work, understaffed stations, fare-free entry points, alternative routes, and other loopholes in the ticketing system.
+An open, crowdsourced repository documenting **ticket inspection bypass points** across the OASA transit network (Metro, ISAP, Tram, Bus). The goal is to **map infrastructure gaps** — elevators without supervision, alternative entry routes, unstaffed stations during certain hours — so that security measures can be improved.
 
 ### How to view the data
 
