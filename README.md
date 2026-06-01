@@ -2,6 +2,8 @@
 
 > Crowdsourced documentation of inspection bypass points across the OASA network (Metro, ISAP, Tram, Bus).
 
+**📊 [View the Interactive Dashboard](https://efstanding.github.io/Athens-Transit-Gaps/)**
+
 **[🇬🇷 Ελληνικά](#-ελληνικά) | [🇬🇧 English](#-english)**
 
 ---
@@ -10,7 +12,19 @@
 
 ### Τι είναι αυτό;
 
-Ένα ανοιχτό, crowdsourced αποθετήριο που καταγράφει **σημεία παράκαμψης ελέγχου εισιτηρίων** στο δίκτυο του ΟΑΣΑ — μετρό, ΗΣΑΠ, τραμ, λεωφορεία. Στόχος είναι η **χαρτογράφηση υποδομικών κενών** (ασανσέρ που παρακάμπτουν μπάρες, εναλλακτικές διαδρομές, εξόδους που λειτουργούν ως είσοδοι κ.λπ.) για σκοπούς τεκμηρίωσης, δημόσιου διαλόγου και ενημέρωσης.
+Ένα ανοιχτό, crowdsourced αποθετήριο που καταγράφει **σημεία παράκαμψης ελέγχου εισιτηρίων** στο δίκτυο του ΟΑΣΑ — στοχεύοντας να χαρτογραφήσει κενά υποδομής που επιτρέπουν την παράκαμψη του ελέγχου.
+
+### Πώς να δεις τα δεδομένα
+
+**[📊 Άνοιξε το διαδραστικό dashboard](https://efstanding.github.io/Athens-Transit-Gaps/)** (GitHub Pages)
+
+Το dashboard προσφέρει:
+- **Φιλτράρισμα κατά γραμμή** — M1, M2, M3, PROAST
+- **Φιλτράρισμα κατά τύπο κενού** — elevator, alt-route, fare-free, unstaffed, κλπ.
+- **Φιλτράρισμα κατά κατάσταση** — active, unverified, patched
+- **Αναζήτηση** — αναζήτησε σταθμό, περιγραφή, ή σημείο εισόδου
+- **Ταξινόμηση** — κάνε κλικ στις κεφαλίδες για ταξινόμηση κατά ID, σταθμό, σοβαρότητα, ή ημερομηνία επαλήθευσης
+- **Στατιστικά** — δες σύνολο entries, σταθμών, και ενεργών gaps
 
 ### Δομή δεδομένων
 
@@ -49,7 +63,19 @@
 
 ### What is this?
 
-An open, crowdsourced repository documenting **ticket inspection bypass points** across the OASA transit network (Metro, ISAP, Tram, Bus). The goal is to **map infrastructure gaps** — elevators that bypass fare gates, alternative routes, exit-only doors used as entrances, etc. — for documentation, public awareness, and discussion purposes.
+An open, crowdsourced repository documenting **ticket inspection bypass points** across the OASA transit network (Metro, ISAP, Tram, Bus). The goal is to **map infrastructure gaps** — elevators that don't work, understaffed stations, fare-free entry points, alternative routes, and other loopholes in the ticketing system.
+
+### How to view the data
+
+**[📊 Open the interactive dashboard](https://efstanding.github.io/Athens-Transit-Gaps/)** (GitHub Pages)
+
+The dashboard provides:
+- **Filter by line** — M1, M2, M3, PROAST
+- **Filter by gap type** — elevator, alt-route, fare-free, unstaffed, etc.
+- **Filter by status** — active, unverified, patched
+- **Search** — find a station, description, or entry point
+- **Sort** — click column headers to sort by ID, station, severity, or last verified date
+- **Statistics** — see total entries, affected stations, and active gaps
 
 ### Data structure
 
