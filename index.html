@@ -398,6 +398,12 @@
 </footer>
 
 <script>
+// Validation whitelists for input sanitization
+const VALID_LINES = ['M1', 'M2', 'M3', 'PROAST', 'TRAM', 'BUS', 'ISAP'];
+const VALID_TYPES = ['elevator', 'alt-route', 'exit-only', 'fare-free', 'unstaffed', 'other'];
+const VALID_STATUS = ['active', 'patched', 'unverified'];
+const VALID_SEVERITY = ['high', 'med', 'low'];
+
 let gaps = [];
 let lineFilter = 'all';
 let typeFilter = 'all';
@@ -405,10 +411,45 @@ let statusFilter = 'all';
 let sortKey = null;
 let sortDir = 1;
 
+// Sanitize function to prevent XSS
+function sanitizeText(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Validate and sanitize line values
+function validateLine(line) {
+  return VALID_LINES.includes(line) ? line : null;
+}
+
+// Validate and sanitize type values
+function validateType(type) {
+  return VALID_TYPES.includes(type) ? type : 'other';
+}
+
+// Validate and sanitize status values
+function validateStatus(status) {
+  return VALID_STATUS.includes(status) ? status : 'unverified';
+}
+
+// Validate and sanitize severity values
+function validateSeverity(severity) {
+  return VALID_SEVERITY.includes(severity) ? severity : 'low';
+}
+
 fetch('data/gaps.json')
   .then(r => r.json())
   .then(data => {
-    gaps = data;
+    // Sanitize incoming data
+    gaps = data.map(g => ({
+      ...g,
+      lines: (g.lines || []).filter(l => VALID_LINES.includes(l)),
+      gap_type: validateType(g.gap_type),
+      status: validateStatus(g.status),
+      severity: validateSeverity(g.severity)
+    }));
+    
     const total = gaps.length;
     const stations = new Set(gaps.map(g => g.station)).size;
     const active = gaps.filter(g => g.status === 'active').length;
@@ -416,6 +457,10 @@ fetch('data/gaps.json')
     document.getElementById('stat-stations').textContent = stations;
     document.getElementById('stat-active').textContent = active;
     render();
+  })
+  .catch(err => {
+    console.error('Error loading gaps.json:', err);
+    document.getElementById('count-bar').textContent = 'Error loading data';
   });
 
 function setLine(btn) {
@@ -482,21 +527,84 @@ function render() {
   empty.style.display = 'none';
 
   tbody.innerHTML = filtered.map(g => {
-    const lineTags = g.lines.map(l => `<span class="line-tag tag-${l}">${l}</span>`).join('');
-    const sev = `<div class="sev sev-${g.severity}"><div class="sev-dot"></div>${g.severity}</div>`;
-    const status = `<span class="status-tag status-${g.status}">${g.status}</span>`;
-    return `<tr>
-      <td><div class="id">${g.id}</div></td>
-      <td><div class="station-name">${g.station}</div><div class="station-en">${g.station_en}</div></td>
-      <td>${lineTags}</td>
-      <td><span class="type-tag">${g.gap_type}</span></td>
-      <td>${sev}</td>
-      <td><div class="desc">${g.description}</div></td>
-      <td><div class="entry-point">${g.entry_point}</div></td>
-      <td>${status}</td>
-      <td><div class="verified">${g.last_verified || '—'}</div></td>
-    </tr>`;
-  }).join('');
+    // Safely render line tags with validated values
+    const lineTags = (g.lines || [])
+      .filter(l => VALID_LINES.includes(l))
+      .map(l => `<span class="line-tag tag-${sanitizeText(l)}">${sanitizeText(l)}</span>`)
+      .join('');
+    
+    // Safely render severity with validated value
+    const sevClass = validateSeverity(g.severity);
+    const sev = `<div class="sev sev-${sevClass}"><div class="sev-dot"></div>${sanitizeText(sevClass)}</div>`;
+    
+    // Safely render status with validated value
+    const statusClass = validateStatus(g.status);
+    const status = `<span class="status-tag status-${statusClass}">${sanitizeText(statusClass)}</span>`;
+    
+    // Create row safely without using innerHTML for user content
+    const row = document.createElement('tr');
+    
+    const idCell = document.createElement('td');
+    const idDiv = document.createElement('div');
+    idDiv.className = 'id';
+    idDiv.textContent = g.id;
+    idCell.appendChild(idDiv);
+    
+    const stationCell = document.createElement('td');
+    const stationName = document.createElement('div');
+    stationName.className = 'station-name';
+    stationName.textContent = g.station;
+    const stationEn = document.createElement('div');
+    stationEn.className = 'station-en';
+    stationEn.textContent = g.station_en;
+    stationCell.appendChild(stationName);
+    stationCell.appendChild(stationEn);
+    
+    const lineCell = document.createElement('td');
+    lineCell.innerHTML = lineTags; // Safe: only contains validated line names
+    
+    const typeCell = document.createElement('td');
+    const typeTag = document.createElement('span');
+    typeTag.className = 'type-tag';
+    typeTag.textContent = validateType(g.gap_type);
+    typeCell.appendChild(typeTag);
+    
+    const sevCell = document.createElement('td');
+    sevCell.innerHTML = sev; // Safe: only validated severity
+    
+    const descCell = document.createElement('td');
+    const descDiv = document.createElement('div');
+    descDiv.className = 'desc';
+    descDiv.textContent = g.description; // textContent prevents XSS
+    descCell.appendChild(descDiv);
+    
+    const entryCell = document.createElement('td');
+    const entryDiv = document.createElement('div');
+    entryDiv.className = 'entry-point';
+    entryDiv.textContent = g.entry_point;
+    entryCell.appendChild(entryDiv);
+    
+    const statusCell = document.createElement('td');
+    statusCell.innerHTML = status; // Safe: only validated status
+    
+    const verCell = document.createElement('td');
+    const verDiv = document.createElement('div');
+    verDiv.className = 'verified';
+    verDiv.textContent = g.last_verified || '—';
+    verCell.appendChild(verDiv);
+    
+    row.appendChild(idCell);
+    row.appendChild(stationCell);
+    row.appendChild(lineCell);
+    row.appendChild(typeCell);
+    row.appendChild(sevCell);
+    row.appendChild(descCell);
+    row.appendChild(entryCell);
+    row.appendChild(statusCell);
+    row.appendChild(verCell);
+    
+    return row;
+  }).reduce((html, row) => html + row.outerHTML, '');
 }
 </script>
 </body>
