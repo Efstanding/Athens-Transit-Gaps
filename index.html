@@ -734,8 +734,8 @@ function render() {
   }
   empty.style.display = 'none';
 
-  tbody.innerHTML = filtered.map(g => {
-    // Safely render line tags with validated values
+tbody.innerHTML = '';
+filtered.forEach(g => {    // Safely render line tags with validated values
     const lineTags = (g.lines || [])
       .filter(l => VALID_LINES.includes(l))
       .map(l => `<span class="line-tag tag-${sanitizeText(l)}">${sanitizeText(l)}</span>`)
@@ -816,8 +816,7 @@ function render() {
     row.appendChild(statusCell);
     row.appendChild(verCell);
     
-    return row;
-  }).reduce((html, row) => html + row.outerHTML, '');
+      tbody.appendChild(row);});
 }
 </script>
 </body>
