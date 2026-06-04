@@ -278,6 +278,28 @@
     line-height: 1.5;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    max-height: 3.6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    position: relative;
+    padding-right: 1.5rem;
+  }
+
+  .desc::after {
+    content: '...';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to right, transparent, var(--bg2));
+    padding-left: 1rem;
+    font-weight: bold;
+    color: var(--muted);
+  }
+
+  .desc:hover {
+    color: var(--text);
+    text-decoration: underline;
   }
 
   .entry-point {
@@ -316,11 +338,133 @@
   footer a { color: var(--muted2); text-decoration: none; }
   footer a:hover { color: var(--text); }
 
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    animation: fadeIn 0.2s;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal.show { display: flex; align-items: center; justify-content: center; }
+
+  .modal-content {
+    background-color: var(--bg2);
+    padding: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+
+  .modal-header-title {
+    flex: 1;
+  }
+
+  .modal-header-title h2 {
+    font-family: var(--mono);
+    font-size: 14px;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  .modal-header-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted2);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 1rem;
+    transition: color 0.1s;
+  }
+
+  .modal-close:hover {
+    color: var(--text);
+  }
+
+  .modal-body {
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .modal-section-content {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
   @media (max-width: 700px) {
     header, .controls { padding: 1rem; }
     td, th { padding: 10px 10px; }
     .search-wrap { width: 100%; }
     input#search { width: 100%; }
+
+    .modal-content {
+      max-width: 90vw;
+      margin: 1rem;
+      max-height: 90vh;
+    }
+
+    .desc {
+      max-height: 2.4em;
+    }
   }
 </style>
 </head>
@@ -390,17 +534,48 @@
 
 <div id="empty" class="empty" style="display:none">no entries match your filters</div>
 
+<!-- Modal for expanded description -->
+<div id="descriptionModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div class="modal-header-title">
+        <h2 id="modalTitle">Description</h2>
+        <div class="modal-header-meta" id="modalMeta"></div>
+      </div>
+      <button class="modal-close" onclick="closeDescriptionModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-section">
+        <span class="modal-section-label">Full Description</span>
+        <div class="modal-section-content" id="modalDescription"></div>
+      </div>
+      <div class="modal-section">
+        <span class="modal-section-label">Entry Point</span>
+        <div class="modal-section-content" id="modalEntryPoint"></div>
+      </div>
+      <div class="modal-section">
+        <span class="modal-section-label">Destination</span>
+        <div class="modal-section-content" id="modalDestination"></div>
+      </div>
+      <div class="modal-section">
+        <span class="modal-section-label">Notes</span>
+        <div class="modal-section-content" id="modalNotes"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <footer>
   <span>data: <a href="data/gaps.json">gaps.json</a></span>
   <span>schema: <a href="data/schema.json">schema.json</a></span>
   <span><a href="CONTRIBUTING.md">how to contribute</a></span>
-  <span><a href="https://github.com/Efstanding/athens-transit-gaps">github</a></span>
+  <span><a href="https://github.com/Efstanding/Athens-Transit-Gaps">github</a></span>
 </footer>
 
 <script>
 // Validation whitelists for input sanitization
 const VALID_LINES = ['M1', 'M2', 'M3', 'PROAST', 'TRAM', 'BUS', 'ISAP'];
-const VALID_TYPES = ['elevator', 'alt-route', 'exit-only', 'fare-free', 'unstaffed', 'other'];
+const VALID_TYPES = ['elevator', 'alt-route', 'exit-only', 'fare-free', 'unstaffed', 'other', 'transfer-bypass'];
 const VALID_STATUS = ['active', 'patched', 'unverified'];
 const VALID_SEVERITY = ['high', 'med', 'low'];
 
@@ -437,6 +612,39 @@ function validateStatus(status) {
 function validateSeverity(severity) {
   return VALID_SEVERITY.includes(severity) ? severity : 'low';
 }
+
+// Open description modal
+function openDescriptionModal(gap) {
+  document.getElementById('modalTitle').textContent = gap.title;
+  document.getElementById('modalMeta').textContent = `${gap.id} • ${gap.station} (${gap.station_en})`;
+  document.getElementById('modalDescription').textContent = gap.description;
+  document.getElementById('modalEntryPoint').textContent = gap.entry_point;
+  document.getElementById('modalDestination').textContent = gap.destination;
+  document.getElementById('modalNotes').textContent = gap.notes || '—';
+  document.getElementById('descriptionModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+// Close description modal
+function closeDescriptionModal() {
+  document.getElementById('descriptionModal').classList.remove('show');
+  document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  const modal = document.getElementById('descriptionModal');
+  if (event.target == modal) {
+    closeDescriptionModal();
+  }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    closeDescriptionModal();
+  }
+});
 
 fetch('data/gaps.json')
   .then(r => r.json())
@@ -575,7 +783,12 @@ function render() {
     const descCell = document.createElement('td');
     const descDiv = document.createElement('div');
     descDiv.className = 'desc';
-    descDiv.textContent = g.description; // textContent prevents XSS
+    descDiv.textContent = g.description;
+    descDiv.style.cursor = 'pointer';
+    descDiv.onclick = (e) => {
+      e.stopPropagation();
+      openDescriptionModal(g);
+    };
     descCell.appendChild(descDiv);
     
     const entryCell = document.createElement('td');
