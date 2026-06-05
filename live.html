@@ -218,7 +218,8 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const TRAIN_STREAM = 'https://railway.gov.gr/api/train-stream';
+const IS_LOCAL    = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const TRAIN_STREAM = IS_LOCAL ? 'http://localhost:8765/stream' : 'https://corsproxy.io/?https://railway.gov.gr/api/train-stream';
 const OASA_BASE   = 'https://telematics.oasa.gr/api/';
 const TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const ATTR  = '© OpenStreetMap © CARTO';
