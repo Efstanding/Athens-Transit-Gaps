@@ -201,7 +201,8 @@
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const PROXY = 'http://127.0.0.1:8765';
+const TRAIN_STREAM = 'https://railway.gov.gr/api/train-stream';
+const OASA_BASE   = 'https://telematics.oasa.gr/api/';
 const TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const ATTR  = '© OpenStreetMap © CARTO';
 const ATHENS = [37.984, 23.728];
@@ -348,7 +349,7 @@ function onTrain(t) {
 }
 function connectTrains() {
   const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
-  const es  = new EventSource(`${PROXY}/stream`);
+  const es  = new EventSource(TRAIN_STREAM);
   es.addEventListener('trainPositionsUx', e => {
     try {
       const d = JSON.parse(e.data);
@@ -376,7 +377,7 @@ let bTimer     = null;
 
 async function loadLines() {
   try {
-    const r = await fetch(`${PROXY}/oasa?act=webGetLines`);
+    const r = await fetch(`${OASA_BASE}?act=webGetLines`);
     allLines = await r.json();
   } catch {}
 }
@@ -404,8 +405,13 @@ function clearBMarkers() {
 
 async function drawRouteShape(routeCode, color) {
   try {
-    const r = await fetch(`${PROXY}/route-shape?route=${routeCode}`);
-    const stops = await r.json();
+    const r = await fetch(`${OASA_BASE}?act=getRoutesForStop&p1=${routeCode}`);
+    const stops = await (async () => {
+      const sr = await fetch(`${OASA_BASE}?act=getStopsForRoute&p1=${routeCode}&p2=1`);
+      const raw = await sr.json();
+      if (!Array.isArray(raw)) return [];
+      return raw.map(s => ({ lat: parseFloat(s.stop_lat), lng: parseFloat(s.stop_lng), name: s.stop_descr, code: s.stop_code })).filter(s => s.lat && s.lng);
+    })();
     if (!stops.length) return;
     const latlngs = stops.map(s => [s.lat, s.lng]);
     const line = L.polyline(latlngs, { color, weight: 3, opacity: 0.8 }).addTo(bMap);
@@ -422,7 +428,7 @@ async function drawRouteShape(routeCode, color) {
 
 async function fetchBuses(line) {
   try {
-    const r = await fetch(`${PROXY}/oasa?act=getRoutesForLine&p1=${line.LineCode}`);
+    const r = await fetch(`${OASA_BASE}?act=getRoutesForLine&p1=${line.LineCode}`);
     const routes = await r.json();
     if (!Array.isArray(routes)) return;
     bMarkers.forEach(m => bMap.removeLayer(m));
@@ -439,7 +445,7 @@ async function fetchBuses(line) {
         shapeP._routeCode = rt.route_code;
       }
       try {
-        const br = await fetch(`${PROXY}/oasa?act=getBusLocation&p1=${rt.route_code}`);
+        const br = await fetch(`${OASA_BASE}?act=getBusLocation&p1=${rt.route_code}`);
         const buses = await br.json();
         if (!Array.isArray(buses)) continue;
         buses.forEach(b => {
