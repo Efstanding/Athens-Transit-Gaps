@@ -470,13 +470,17 @@ async function pollTrains() {
   const timeout = setTimeout(() => ctrl.abort(), 12000);
   try {
     const r = await fetch(TRAIN_PROXY, { signal: ctrl.signal });
+    console.log('[train] status', r.status, r.headers.get('content-type'));
     const reader = r.body.getReader();
     const dec = new TextDecoder();
-    let buf = '', found = false;
+    let buf = '', found = false, chunks = 0;
     while (!found) {
       const { done, value } = await reader.read();
       if (done) break;
-      buf += dec.decode(value, { stream: true });
+      const chunk = dec.decode(value, { stream: true });
+      chunks++;
+      if (chunks <= 3) console.log('[train] chunk', chunks, JSON.stringify(chunk.slice(0,200)));
+      buf += chunk;
       const parts = buf.split('\n\n');
       buf = parts.pop();
       for (const block of parts) {
@@ -485,6 +489,7 @@ async function pollTrains() {
           if (line.startsWith('event:')) type = line.slice(6).trim();
           if (line.startsWith('data:'))  data = line.slice(5).trim();
         }
+        console.log('[train] block event:', type, 'data len:', data.length);
         if (type === 'trainPositionsUx' && data) {
           clearTimeout(timeout); ctrl.abort(); found = true;
           const d = JSON.parse(data);
