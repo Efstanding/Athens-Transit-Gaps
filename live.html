@@ -320,28 +320,24 @@ function switchTab(name) {
 const tMap = L.map('train-map', { center: ATHENS, zoom: 10, zoomControl: true });
 L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(tMap);
 
-// load real OSM track geometry via Overpass
-(async () => {
-  try {
-    const q = `[out:json][timeout:25];(way["railway"~"rail|narrow_gauge"](35.0,19.5,42.0,28.5););out geom;`;
-    const r = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
-    const d = await r.json();
-    d.elements.forEach(way => {
-      if (!way.geometry) return;
-      const latlngs = way.geometry.map(p => [p.lat, p.lon]);
-      L.polyline(latlngs, { color: '#3d3d5c', weight: 2.5, opacity: 0.9 }).addTo(tMap);
-    });
-  } catch {}
-  // station dots on top of tracks
-  Object.entries(STATIONS).forEach(([key, c]) => {
-    c.stops.forEach(([name, lat, lng]) => {
-      L.circleMarker([lat, lng], {
-        radius: 5, color: c.color, fillColor: '#0e0e0e', fillOpacity: 1, weight: 2
-      }).bindPopup(`<div class="pu-name">🚉 ${name}</div><span class="pu-tag tag-t">${key}</span>`)
-        .addTo(tMap);
-    });
+// OpenRailwayMap tile overlay — real track geometry, always reliable
+L.tileLayer('https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png', {
+  attribution: '© OpenRailwayMap',
+  maxZoom: 19,
+  opacity: 0.45
+}).addTo(tMap);
+
+// Corridor colored lines + station dots
+Object.entries(STATIONS).forEach(([key, c]) => {
+  const latlngs = c.stops.map(([,lat,lng]) => [lat,lng]);
+  L.polyline(latlngs, { color: c.color, weight: 3, opacity: 0.75, smoothFactor: 1.5 }).addTo(tMap);
+  c.stops.forEach(([name, lat, lng]) => {
+    L.circleMarker([lat, lng], {
+      radius: 4, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2
+    }).bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`)
+      .addTo(tMap);
   });
-})();
+});
 
 // live train markers
 const tMarkers = {};
