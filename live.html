@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athens Transit — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #09090b;
+    --bg2:     #111115;
+    --bg3:     #18181d;
+    --border:  rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.10);
+    --text:    #eef0f4;
+    --muted:   #48556a;
+    --muted2:  #7a8899;
+    --accent:  #4f8ef7;
+    --proast:  #8b7cf6;
+    --bus:     #4f8ef7;
+    --ok:      #2dd4a0;
+    --warn:    #f5a623;
+    --late:    #f06b6b;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --ease: cubic-bezier(0.16,1,0.3,1);
+  }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); -webkit-font-smoothing: antialiased; }
+  .app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── topbar ─────────────────────────────────────── */
+  .topbar {
+    flex-shrink: 0; height: 42px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px;
+    background: var(--bg);
+  }
+  .back {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .04em;
+    color: var(--muted2); text-decoration: none;
+    padding: 3px 9px; border: 1px solid var(--border2); border-radius: 3px;
+    transition: color .12s var(--ease), border-color .12s; white-space: nowrap; flex-shrink: 0;
+  }
+  .back:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+  .topbar-sep { color: var(--muted); font-size: 12px; flex-shrink: 0; user-select: none; }
+  .topbar-title {
+    font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .03em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
+  }
+  .topbar-tag {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); padding: 2px 7px; border: 1px solid var(--border);
+    border-radius: 2px; flex-shrink: 0;
+  }
+  .delay-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    background: rgba(245,166,35,.07); color: var(--warn);
+    border: 1px solid rgba(245,166,35,.2); padding: 2px 7px; border-radius: 2px; flex-shrink: 0;
+  }
+  .conn {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted2); flex-shrink: 0;
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0; transition: background .4s, box-shadow .4s;
+  }
+  .dot.on  { background: var(--ok); box-shadow: 0 0 0 2px rgba(45,212,160,.15); }
+  .dot.err { background: var(--late); }
+
+  /* ── tabs ───────────────────────────────────────── */
+  .tabs {
+    flex-shrink: 0; display: flex;
+    border-bottom: 1px solid var(--border); background: var(--bg);
+  }
+  .tab {
+    flex: 1; height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: .09em;
+    cursor: pointer; color: var(--muted); border: none; background: none;
+    border-bottom: 2px solid transparent; transition: color .12s, border-color .12s; user-select: none;
+  }
+  .tab:hover { color: var(--muted2); }
+  .tab.act[data-tab="trains"] { color: var(--proast); border-bottom-color: var(--proast); }
+  .tab.act[data-tab="buses"]  { color: var(--bus);    border-bottom-color: var(--bus); }
+  .tab-pip {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; opacity: .5; flex-shrink: 0;
+  }
+  .tab.act .tab-pip { opacity: 1; }
+
+  /* ── subhead ────────────────────────────────────── */
+  .subhead {
+    flex-shrink: 0; border-bottom: 1px solid var(--border); padding: 6px 14px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 4px; min-height: 34px;
+  }
+  .sub-badge {
+    font-family: var(--mono); font-size: 10px; color: var(--muted2);
+    letter-spacing: .04em; flex-shrink: 0; min-width: 56px;
+  }
+  .pills { display: flex; gap: 3px; flex-wrap: wrap; }
+  button.pill {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .04em;
+    padding: 2px 9px; border-radius: 2px;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all .1s var(--ease);
+  }
+  button.pill:hover { border-color: rgba(255,255,255,.18); color: var(--text); }
+  button.pill.act {
+    background: rgba(79,142,247,.12); border-color: rgba(79,142,247,.35);
+    color: var(--accent); font-weight: 500;
+  }
+  button.pill.all.act {
+    background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: var(--text);
+  }
+
+  /* ── bus search ─────────────────────────────────── */
+  .search-wrap { position: relative; flex: 1; min-width: 140px; max-width: 260px; }
+  input.search {
+    font-family: var(--mono); font-size: 11px; width: 100%;
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--text); padding: 4px 10px; border-radius: 3px; outline: none;
+    transition: border-color .12s;
+  }
+  input.search:focus { border-color: rgba(79,142,247,.45); }
+  input.search::placeholder { color: var(--muted); }
+  .drop {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 4px; max-height: 220px; overflow-y: auto; z-index: 600; display: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.55);
+  }
+  .drop.open { display: block; }
+  .dopt { padding: 7px 10px; font-family: var(--mono); font-size: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .08s; }
+  .dopt:last-child { border-bottom: none; }
+  .dopt:hover { background: var(--bg3); }
+  .dopt-id   { color: var(--bus); font-weight: 500; letter-spacing: .03em; }
+  .dopt-desc { display: block; color: var(--muted2); font-size: 9px; margin-top: 2px; }
+  .sel { display: none; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--bus); max-width: 200px; overflow: hidden; flex-shrink: 0; }
+  .sel.show { display: flex; }
+  .sel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .02em; }
+  .sel-x { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; flex-shrink: 0; transition: color .1s; }
+  .sel-x:hover { color: var(--text); }
+  .b-count { font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-left: auto; flex-shrink: 0; }
+
+  /* ── views ──────────────────────────────────────── */
+  .view { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+  .view.show { display: flex; }
+  .map { flex: 1; }
+
+  /* ── empty state ────────────────────────────────── */
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 6px; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .04em; color: var(--muted); text-align: center; padding: 24px; line-height: 2.2;
+  }
+
+  /* ── legend ─────────────────────────────────────── */
+  .legend {
+    position: absolute; bottom: 24px; right: 12px; z-index: 500;
+    background: rgba(9,9,11,.85);
+    border: 1px solid rgba(255,255,255,.08);
+    border-top-color: rgba(255,255,255,.13);
+    border-radius: 6px; padding: 10px 14px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted2);
+    pointer-events: none;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    min-width: 154px;
+  }
+  .legend-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); display: block; margin-bottom: 6px;
+  }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; line-height: 1; }
+  .legend-row:last-child { margin-bottom: 0; }
+  .leg-line { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+  .leg-dot  { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.55); flex-shrink: 0; }
+  .legend-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
+
+  /* ── popup ──────────────────────────────────────── */
+  .leaflet-popup-content-wrapper {
+    background: var(--bg2); color: var(--text);
+    border: 1px solid rgba(255,255,255,.08);
+    border-top-color: rgba(255,255,255,.14);
+    border-radius: 7px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .leaflet-popup-tip { background: var(--bg2); }
+  .leaflet-popup-content { margin: 14px 16px; font-family: var(--mono); font-size: 11px; line-height: 1; min-width: 188px; }
+  .pu-name { font-size: 13px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 2px; }
+  .pu-sub  { font-size: 10px; color: var(--muted2); letter-spacing: .02em; margin-bottom: 10px; }
+  .pu-row  {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 20px;
+    color: var(--muted); font-size: 10px; letter-spacing: .03em;
+    border-bottom: 1px solid var(--border); padding: 4px 0;
+  }
+  .pu-row:last-of-type { border-bottom: none; }
+  .pu-row span:last-child { color: var(--text); font-weight: 500; text-align: right; }
+  .pu-divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+  .pu-note { font-size: 9px; color: var(--muted); margin-top: 8px; letter-spacing: .06em; text-transform: uppercase; }
+  .ok   { color: var(--ok); }
+  .warn { color: var(--warn); }
+  .late { color: var(--late); }
+
+  /* ── markers ────────────────────────────────────── */
+  @keyframes stationPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .45; transform: scale(.88); }
+  }
+  .t-marker-stationary { animation: stationPulse 3s ease-in-out infinite; }
+  .t-marker-moving     { animation: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <a href="index.html" class="back">← gaps</a>
+    <span class="topbar-sep">/</span>
+    <span class="topbar-title">athens-transit / live</span>
+    <span class="topbar-tag">preview</span>
+    <span class="delay-badge">~10s delayed</span>
+    <div class="conn"><div class="dot" id="dot"></div><span id="s-text">connecting…</span></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab act" data-tab="trains" onclick="switchTab('trains')"><span class="tab-pip"></span>Trains</button>
+    <button class="tab"     data-tab="buses"  onclick="switchTab('buses')"><span class="tab-pip"></span>Buses</button>
+  </div>
+
+  <!-- TRAINS -->
+  <div class="view show" id="view-trains">
+    <div class="subhead">
+      <span class="sub-badge" id="t-count">— active</span>
+      <div class="pills" id="c-pills">
+        <button class="pill all act" data-c="all" onclick="setCorridor(this)">all</button>
+      </div>
+    </div>
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+      <div id="train-map" class="map"></div>
+      <div class="legend" id="t-legend">
+        <span class="legend-label">corridors</span>
+        <div class="legend-row"><div class="leg-line" style="background:#8b7cf6"></div>A1 Πειραιάς — Αεροδρ.</div>
+        <div class="legend-row"><div class="leg-line" style="background:#b09af8"></div>A2 Άνω Λιόσια — Αεροδρ.</div>
+        <div class="legend-row"><div class="leg-line" style="background:#f5a623"></div>A3 Χαλκίδα</div>
+        <div class="legend-row"><div class="leg-line" style="background:#2dd4a0"></div>A4 Κιάτο</div>
+        <hr class="legend-divider">
+        <span class="legend-label">delay</span>
+        <div class="legend-row"><div class="leg-dot" style="background:#8b7cf6"></div>on time</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#f5a623"></div>delayed</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#f06b6b"></div>&gt;2 min late</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUSES -->
+  <div class="view" id="view-buses">
+    <div class="subhead">
+      <div class="search-wrap">
+        <input class="search" id="b-in" type="text" placeholder="search line  (040, Β5, Πειραιάς…)" autocomplete="off"/>
+        <div class="drop" id="b-drop"></div>
+      </div>
+      <div class="sel" id="sel"><span class="sel-name" id="sel-name"></span><span class="sel-x" onclick="clearBus()">×</span></div>
+      <span class="b-count" id="b-count"></span>
+    </div>
+    <div style="position:relative;flex:1;display:flex;flex-direction:column;">
+      <div id="bus-empty" class="empty-state">tap the search box<br>and pick a line</div>
+      <div id="bus-map" class="map" style="display:none"></div>
+    </div>
+  </div>
+
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const IS_LOCAL    = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+const TRAIN_STREAM = IS_LOCAL ? 'http://localhost:8765/stream' : 'https://corsproxy.io/?https://railway.gov.gr/api/train-stream';
+const OASA_BASE   = 'https://telematics.oasa.gr/api/';
+const TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const ATTR  = '© OpenStreetMap © CARTO';
+const ATHENS = [37.984, 23.728];
+
+// ── Station dots per corridor ──────────────────────────────
+const STATIONS = {
+  PIRAIR: { color: '#8b7cf6', stops: [
+    ['Πειραιάς',37.9492,23.6433],['Λευκά',37.9553,23.6539],['Ρέντης',37.9622,23.6686],
+    ['Ταύρος',37.9686,23.6933],['Ρουφ',37.9740,23.7042],['Αθήνα Λαρίσης',37.9931,23.7203],
+    ['Άγιοι Ανάργυροι',38.0217,23.7183],['Πύργος Βασιλίσσης',38.0397,23.7272],
+    ['Κάτω Αχαρναί',38.0543,23.7327],['Μεταμόρφωση',38.0600,23.7560],
+    ['Ηράκλειο',38.0572,23.7708],['Νερατζιώτισσα',38.0451,23.7932],
+    ['Κηφισίας',38.0408,23.8035],['Πεντέλης',38.0333,23.8220],
+    ['Δουκίσσης Πλακεντίας',38.0248,23.8339],['Παλλήνη',38.0051,23.8698],
+    ['Παιανία-Κάντζα',37.9845,23.8700],['Κορωπί',37.9129,23.8931],
+    ['Αεροδρόμιο',37.9369,23.9447]
+  ]},
+  LIOAIR: { color: '#b09af8', stops: [
+    ['Άνω Λιόσια',38.0707,23.7101],['Σιδ. Κέντρο Αχαρνών',38.0657,23.7372],
+    ['Αχαρναί',38.0803,23.7438],['Μεταμόρφωση',38.0600,23.7560],
+    ['Ηράκλειο',38.0572,23.7708],['Νερατζιώτισσα',38.0451,23.7932],
+    ['Δουκίσσης Πλακεντίας',38.0248,23.8339],['Παλλήνη',38.0051,23.8698],
+    ['Παιανία-Κάντζα',37.9845,23.8700],['Κορωπί',37.9129,23.8931],
+    ['Αεροδρόμιο',37.9369,23.9447]
+  ]},
+  E85: { color: '#f5a623', stops: [
+    ['Αθήνα Λαρίσης',37.9931,23.7203],['Νερατζιώτισσα',38.0451,23.7932],
+    ['Κηφισίας',38.0408,23.8035],['Δουκίσσης Πλακεντίας',38.0248,23.8339],
+    ['Άγιος Στέφανος',38.1365,23.8471],['Μαλακάσα',38.2300,23.7900],
+    ['Ινόφυτα',38.3300,23.6900],['Χαλκίδα',38.4626,23.5864]
+  ]},
+  A4: { color: '#2dd4a0', stops: [
+    ['Πειραιάς',37.9492,23.6433],['Αθήνα Λαρίσης',37.9931,23.7203],
+    ['Ελευσίνα',38.0390,23.5400],['Μέγαρα',37.9960,23.3410],
+    ['Κινέτα',37.9430,23.1730],['Κόρινθος',37.9410,22.9320],
+    ['Κιάτο',38.0139,22.7347]
+  ]},
+};
+
+// ── Tab switch ─────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('act', t.dataset.tab === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('show', v.id === `view-${name}`));
+  if (name === 'trains') tMap.invalidateSize();
+  if (name === 'buses')  bMap.invalidateSize();
+}
+
+// ── TRAIN MAP ──────────────────────────────────────────────
+const tMap = L.map('train-map', { center: ATHENS, zoom: 10, zoomControl: true });
+L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(tMap);
+
+// Real corridor geometry from OSM relations (static file, per-corridor colors)
+fetch('data/corridors.json')
+  .then(r => r.json())
+  .then(corridors => {
+    // Draw main line first (bottom layer)
+    const main = corridors['MAIN'];
+    if (main) main.ways.forEach(coords =>
+      L.polyline(coords, { color: main.color, weight: 2, opacity: 0.5, smoothFactor: 1 }).addTo(tMap)
+    );
+    // Draw Proastiakos corridors on top
+    ['PIRAIR','LIOAIR','E85','A4'].forEach(key => {
+      const c = corridors[key];
+      if (!c) return;
+      c.ways.forEach(coords =>
+        L.polyline(coords, { color: c.color, weight: 2.5, opacity: 0.85, smoothFactor: 1 }).addTo(tMap)
+      );
+    });
+    // Station dots on top
+    Object.entries(STATIONS).forEach(([key, c]) => {
+      c.stops.forEach(([name, lat, lng]) => {
+        L.circleMarker([lat, lng], {
+          radius: 5, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2
+        }).bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`)
+          .addTo(tMap);
+      });
+    });
+  })
+  .catch(() => {
+    Object.entries(STATIONS).forEach(([key, c]) => {
+      L.polyline(c.stops.map(([,lat,lng]) => [lat,lng]), { color: c.color, weight: 2.5, opacity: 0.8 }).addTo(tMap);
+      c.stops.forEach(([name, lat, lng]) => {
+        L.circleMarker([lat, lng], { radius: 5, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2 })
+          .bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`).addTo(tMap);
+      });
+    });
+  });
+
+
+// live train markers
+const tMarkers = {};
+const seenCorr = new Set();
+let cFilter = 'all';
+
+function tColor(d) {
+  if (d > 120) return '#f06b6b';
+  if (d > 0)   return '#f5a623';
+  return '#8b7cf6';
+}
+function tIcon(speed, delay) {
+  const moving = (speed||0) > 0.5;
+  const sz = moving ? 20 : 13;
+  const c  = tColor(delay||0);
+  const cls = moving ? 't-marker-moving' : 't-marker-stationary';
+  const border = moving ? 'rgba(255,255,255,.82)' : 'rgba(255,255,255,.45)';
+  const shadow = moving
+    ? `0 0 0 3px ${c}1a, 0 2px 10px ${c}55`
+    : `0 0 6px ${c}44`;
+  return L.divIcon({
+    className: '',
+    html: `<div class="${cls}" style="width:${sz}px;height:${sz}px;background:${c};border:2px solid ${border};border-radius:50%;box-shadow:${shadow};transition:all .6s cubic-bezier(0.16,1,0.3,1);"></div>`,
+    iconSize: [sz,sz], iconAnchor: [sz/2,sz/2]
+  });
+}
+function fDelay(s) {
+  if (!s || s === 0) return '<span class="ok">on time</span>';
+  const abs = Math.abs(s);
+  const m = Math.floor(abs/60), sec = abs % 60;
+  const label = m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  return `<span class="${s>0?'late':'ok'}">${s>0?'+':'-'}${label}</span>`;
+}
+function fCourse(deg) {
+  if (deg == null) return null;
+  const dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  return dirs[Math.round(deg/45) % 8] + ` ${Math.round(deg)}°`;
+}
+function tPopup(t) {
+  const spd = Math.round((t.speed||0)*3.6);
+  const moving = spd > 2;
+  const hdg = fCourse(t.course);
+  const ts  = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : null;
+  return `
+    <div class="pu-name">${t.trainNumber || 'Train'}</div>
+    ${(t.origin||t.destination)?`<div class="pu-sub">${t.origin||'—'} → ${t.destination||'—'}</div>`:`<div class="pu-sub" style="margin-bottom:10px"></div>`}
+    <div class="pu-row"><span>status</span><span>${moving?`<span class="ok">moving</span>`:`<span class="warn">stationary</span>`}</span></div>
+    <div class="pu-row"><span>delay</span><span>${fDelay(t.delay)}</span></div>
+    <div class="pu-row"><span>speed</span><span>${spd} km/h</span></div>
+    ${hdg?`<div class="pu-row"><span>heading</span><span>${hdg}</span></div>`:''}
+    ${t.altitude?`<div class="pu-row"><span>altitude</span><span>${Math.round(t.altitude)} m</span></div>`:''}
+    ${t.corridor?`<div class="pu-row"><span>corridor</span><span>${t.corridor.toLowerCase()}</span></div>`:''}
+    ${ts?`<div class="pu-row"><span>last fix</span><span>${ts}</span></div>`:''}
+    <div class="pu-note">source: railway.gov.gr · ~10s delay</div>
+  `;
+}
+function addCorrPill(c) {
+  if (seenCorr.has(c)) return;
+  seenCorr.add(c);
+  const b = document.createElement('button');
+  b.className = 'pill'; b.dataset.c = c; b.textContent = c.toLowerCase();
+  b.onclick = () => setCorridor(b);
+  document.getElementById('c-pills').appendChild(b);
+}
+function setCorridor(btn) {
+  document.querySelectorAll('#c-pills .pill').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act'); cFilter = btn.dataset.c;
+  Object.values(tMarkers).forEach(m => {
+    const show = cFilter === 'all' || m._corr === cFilter;
+    if (show && !tMap.hasLayer(m)) m.addTo(tMap);
+    if (!show && tMap.hasLayer(m)) tMap.removeLayer(m);
+  });
+  updTCount();
+}
+function updTCount() {
+  const n = Object.values(tMarkers).filter(m => tMap.hasLayer(m)).length;
+  document.getElementById('t-count').textContent = n + ' active';
+}
+function onTrain(t) {
+  if (!t.lat || !t.lng) return;
+  if (t.corridor) addCorrPill(t.corridor);
+  const key  = t.trainId || t.id || t.trainNumber;
+  const show = cFilter === 'all' || t.corridor === cFilter;
+  if (tMarkers[key]) {
+    tMarkers[key].setLatLng([t.lat, t.lng]);
+    tMarkers[key].setIcon(tIcon(t.speed, t.delay));
+    tMarkers[key].setPopupContent(tPopup(t));
+    tMarkers[key]._corr = t.corridor;
+  } else {
+    const m = L.marker([t.lat, t.lng], { icon: tIcon(t.speed, t.delay) }).bindPopup(tPopup(t));
+    m._corr = t.corridor;
+    if (show) m.addTo(tMap);
+    tMarkers[key] = m;
+  }
+}
+function connectTrains() {
+  const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
+  const es  = new EventSource(TRAIN_STREAM);
+  es.addEventListener('trainPositionsUx', e => {
+    try {
+      const d = JSON.parse(e.data);
+      if (!d.positions) return;
+      d.positions.forEach(onTrain);
+      updTCount();
+      dot.className = 'dot on'; stxt.textContent = 'live';
+    } catch {}
+  });
+  es.onopen  = () => { dot.className = 'dot on'; stxt.textContent = 'connected'; };
+  es.onerror = () => {
+    dot.className = 'dot err'; stxt.textContent = 'reconnecting…';
+    es.close(); setTimeout(connectTrains, 5000);
+  };
+}
+
+// ── BUS MAP ────────────────────────────────────────────────
+const bMap = L.map('bus-map', { center: ATHENS, zoom: 12, zoomControl: true });
+L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(bMap);
+
+let allLines   = [];
+let bMarkers   = [];
+let bRouteLayers = [];
+let bTimer     = null;
+
+async function loadLines() {
+  try {
+    const r = await fetch(`${OASA_BASE}?act=webGetLines`);
+    allLines = await r.json();
+  } catch {}
+}
+
+function bIcon() {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:13px;height:13px;background:#4f8ef7;border:2px solid rgba(255,255,255,.75);border-radius:50%;box-shadow:0 0 0 2px rgba(79,142,247,.2),0 2px 8px rgba(79,142,247,.4)"></div>',
+    iconSize:[13,13], iconAnchor:[6,6]
+  });
+}
+function stopIcon(color) {
+  return L.circleMarker([0,0], { radius:3, color, fillColor:'#0e0e0e', fillOpacity:1, weight:2 });
+}
+function bPopup(b, routeDescr) {
+  const t = (() => { try { return new Date(b.CS_DATE).toLocaleTimeString(); } catch { return '—'; } })();
+  return `<div class="pu-name">🚌 ${b.VEH_NO||'—'}</div>${routeDescr?`<div class="pu-row"><span>Route</span><span>${routeDescr}</span></div>`:''}<div class="pu-row"><span>Updated</span><span>${t}</span></div><span class="pu-tag tag-b">${b.ROUTE_CODE||''}</span>`;
+}
+
+function clearBMarkers() {
+  bMarkers.forEach(m => bMap.removeLayer(m));
+  bRouteLayers.forEach(l => bMap.removeLayer(l));
+  bMarkers = []; bRouteLayers = [];
+}
+
+async function drawRouteShape(routeCode, color) {
+  try {
+    const r = await fetch(`${OASA_BASE}?act=getRoutesForStop&p1=${routeCode}`);
+    const stops = await (async () => {
+      const sr = await fetch(`${OASA_BASE}?act=getStopsForRoute&p1=${routeCode}&p2=1`);
+      const raw = await sr.json();
+      if (!Array.isArray(raw)) return [];
+      return raw.map(s => ({ lat: parseFloat(s.stop_lat), lng: parseFloat(s.stop_lng), name: s.stop_descr, code: s.stop_code })).filter(s => s.lat && s.lng);
+    })();
+    if (!stops.length) return;
+    const latlngs = stops.map(s => [s.lat, s.lng]);
+    const line = L.polyline(latlngs, { color, weight: 3, opacity: 0.8 }).addTo(bMap);
+    bRouteLayers.push(line);
+    stops.forEach(s => {
+      const m = L.circleMarker([s.lat, s.lng], {
+        radius: 4, color, fillColor: '#0e0e0e', fillOpacity: 1, weight: 2
+      }).bindPopup(`<div class="pu-name">🚏 ${s.name||'—'}</div><span class="pu-tag tag-b">stop ${s.code}</span>`)
+        .addTo(bMap);
+      bRouteLayers.push(m);
+    });
+  } catch {}
+}
+
+async function fetchBuses(line) {
+  try {
+    const r = await fetch(`${OASA_BASE}?act=getRoutesForLine&p1=${line.LineCode}`);
+    const routes = await r.json();
+    if (!Array.isArray(routes)) return;
+    bMarkers.forEach(m => bMap.removeLayer(m));
+    bMarkers = [];
+    let total = 0;
+    const colors = ['#60a5fa','#818cf8','#38bdf8','#67e8f9'];
+    for (let i = 0; i < routes.length; i++) {
+      const rt = routes[i];
+      if (rt.route_active !== '1') continue;
+      const color = colors[i % colors.length];
+      // draw route shape (first time only per route)
+      if (!bRouteLayers.find(l => l._routeCode === rt.route_code)) {
+        const shapeP = drawRouteShape(rt.route_code, color);
+        shapeP._routeCode = rt.route_code;
+      }
+      try {
+        const br = await fetch(`${OASA_BASE}?act=getBusLocation&p1=${rt.route_code}`);
+        const buses = await br.json();
+        if (!Array.isArray(buses)) continue;
+        buses.forEach(b => {
+          const lat = parseFloat(b.CS_LAT), lng = parseFloat(b.CS_LNG);
+          if (!lat || !lng) return;
+          const m = L.marker([lat,lng],{icon:bIcon()}).bindPopup(bPopup(b,rt.route_descr)).addTo(bMap);
+          bMarkers.push(m); total++;
+        });
+      } catch {}
+    }
+    document.getElementById('b-count').textContent = total ? `${total} buses` : 'no buses';
+    if (bMarkers.length) bMap.fitBounds(L.featureGroup(bMarkers).getBounds().pad(0.2));
+  } catch {}
+}
+
+function startBus(line) {
+  if (bTimer) clearInterval(bTimer);
+  clearBMarkers();
+  document.getElementById('bus-empty').style.display = 'none';
+  document.getElementById('bus-map').style.display   = '';
+  setTimeout(() => bMap.invalidateSize(), 50);
+  fetchBuses(line);
+  bTimer = setInterval(() => {
+    bMarkers.forEach(m => bMap.removeLayer(m)); bMarkers = [];
+    fetchBuses(line);
+  }, 20000);
+  document.getElementById('sel-name').textContent = `${line.LineID}  ${line.LineDescr}`;
+  document.getElementById('sel').classList.add('show');
+  document.getElementById('b-drop').classList.remove('open');
+  document.getElementById('b-in').value = '';
+}
+function clearBus() {
+  if (bTimer) clearInterval(bTimer);
+  clearBMarkers();
+  document.getElementById('sel').classList.remove('show');
+  document.getElementById('b-count').textContent = '';
+  document.getElementById('b-in').value = '';
+  document.getElementById('bus-map').style.display   = 'none';
+  document.getElementById('bus-empty').style.display = '';
+}
+
+// search
+const bIn = document.getElementById('b-in'), bDrop = document.getElementById('b-drop');
+function showDrop(hits) {
+  if (!hits.length) { bDrop.classList.remove('open'); return; }
+  bDrop.innerHTML = hits.map((l,i) => `
+    <div class="dopt" data-i="${i}">
+      <span class="dopt-id">${l.LineID}</span>
+      <span class="dopt-desc">${l.LineDescr}</span>
+    </div>`).join('');
+  bDrop.querySelectorAll('.dopt').forEach(el => el.addEventListener('click', () => startBus(hits[+el.dataset.i])));
+  bDrop.classList.add('open');
+}
+bIn.addEventListener('focus', () => {
+  if (!allLines.length) return;
+  const q = bIn.value.trim().toLowerCase();
+  showDrop(q ? allLines.filter(l => l.LineID.toLowerCase().includes(q)||l.LineDescr.toLowerCase().includes(q)||l.LineDescrEng.toLowerCase().includes(q)).slice(0,12) : allLines.slice(0,12));
+});
+bIn.addEventListener('input', () => {
+  const q = bIn.value.trim().toLowerCase();
+  if (!allLines.length) return;
+  showDrop(q ? allLines.filter(l => l.LineID.toLowerCase().includes(q)||l.LineDescr.toLowerCase().includes(q)||l.LineDescrEng.toLowerCase().includes(q)).slice(0,12) : allLines.slice(0,12));
+});
+bIn.addEventListener('blur', () => setTimeout(() => bDrop.classList.remove('open'), 180));
+
+// ── boot ──────────────────────────────────────────────────
+connectTrains();
+loadLines();
+</script>
+</body>
+</html>

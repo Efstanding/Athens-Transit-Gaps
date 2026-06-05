@@ -450,6 +450,47 @@
     overflow-wrap: break-word;
   }
 
+  .live-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    text-decoration: none;
+    color: var(--text);
+    transition: background .12s;
+  }
+  .live-card:hover { background: #1e1e1e; }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--m1); box-shadow: 0 0 6px var(--m1);
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+  .live-card-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .02em;
+  }
+  .live-card-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    margin-left: 4px;
+  }
+  .live-card-arrow {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
   @media (max-width: 700px) {
     header, .controls { padding: 1rem; }
     td, th { padding: 10px 10px; }
@@ -481,6 +522,13 @@
     <div>active <span id="stat-active">—</span></div>
   </div>
 </header>
+
+<a href="live.html" class="live-card">
+  <div class="live-dot"></div>
+  <span class="live-card-label">live view</span>
+  <span class="live-card-sub">— buses + trains real-time map</span>
+  <span class="live-card-arrow">→</span>
+</a>
 
 <div class="controls">
   <div class="filter-group">
@@ -570,6 +618,7 @@
   <span>schema: <a href="data/schema.json">schema.json</a></span>
   <span><a href="CONTRIBUTING.md">how to contribute</a></span>
   <span><a href="https://github.com/Efstanding/Athens-Transit-Gaps">github</a></span>
+  <span><a href="live.html">→ live view</a></span>
 </footer>
 
 <script>
