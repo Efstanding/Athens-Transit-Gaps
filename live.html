@@ -10,155 +10,209 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg:     #0e0e0e; --bg2: #161616; --bg3: #1e1e1e;
-    --border: #2a2a2a; --border2: #333;
-    --text:   #e8e8e8; --muted: #666;  --muted2: #888;
-    --proast: #a78bfa; --bus: #60a5fa;
-    --ok: #4ade80; --warn: #fbbf24; --late: #f87171;
+    --bg:      #09090b;
+    --bg2:     #111115;
+    --bg3:     #18181d;
+    --border:  rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.10);
+    --text:    #eef0f4;
+    --muted:   #48556a;
+    --muted2:  #7a8899;
+    --accent:  #4f8ef7;
+    --proast:  #8b7cf6;
+    --bus:     #4f8ef7;
+    --ok:      #2dd4a0;
+    --warn:    #f5a623;
+    --late:    #f06b6b;
     --mono: 'IBM Plex Mono', monospace;
     --sans: 'IBM Plex Sans', sans-serif;
+    --ease: cubic-bezier(0.16,1,0.3,1);
   }
-  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--mono); -webkit-font-smoothing: antialiased; }
   .app { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
 
-  /* topbar */
+  /* ── topbar ─────────────────────────────────────── */
   .topbar {
-    flex-shrink: 0; height: 48px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; padding: 0 14px; gap: 10px;
+    flex-shrink: 0; height: 42px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px;
+    background: var(--bg);
   }
   .back {
-    font-family: var(--mono); font-size: 11px; color: var(--muted2);
-    text-decoration: none; padding: 4px 8px; border: 1px solid var(--border2);
-    border-radius: 3px; transition: all .12s; white-space: nowrap; flex-shrink: 0;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .04em;
+    color: var(--muted2); text-decoration: none;
+    padding: 3px 9px; border: 1px solid var(--border2); border-radius: 3px;
+    transition: color .12s var(--ease), border-color .12s; white-space: nowrap; flex-shrink: 0;
   }
-  .back:hover { color: var(--text); border-color: #555; }
+  .back:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+  .topbar-sep { color: var(--muted); font-size: 12px; flex-shrink: 0; user-select: none; }
   .topbar-title {
-    font-family: var(--mono); font-size: 13px; font-weight: 500;
-    letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .03em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
+  }
+  .topbar-tag {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted); padding: 2px 7px; border: 1px solid var(--border);
+    border-radius: 2px; flex-shrink: 0;
+  }
+  .delay-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+    background: rgba(245,166,35,.07); color: var(--warn);
+    border: 1px solid rgba(245,166,35,.2); padding: 2px 7px; border-radius: 2px; flex-shrink: 0;
   }
   .conn {
     margin-left: auto; display: flex; align-items: center; gap: 6px;
-    font-family: var(--mono); font-size: 11px; color: var(--muted2); flex-shrink: 0;
+    font-family: var(--mono); font-size: 10px; color: var(--muted2); flex-shrink: 0;
   }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background .3s; }
-  .dot.on  { background: var(--ok);   box-shadow: 0 0 5px var(--ok); }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--muted); flex-shrink: 0; transition: background .4s, box-shadow .4s;
+  }
+  .dot.on  { background: var(--ok); box-shadow: 0 0 0 2px rgba(45,212,160,.15); }
   .dot.err { background: var(--late); }
 
-  /* tabs */
-  .tabs { flex-shrink: 0; display: flex; border-bottom: 1px solid var(--border); background: var(--bg); }
-  .tab {
-    flex: 1; padding: 10px 0; font-family: var(--mono); font-size: 11px; font-weight: 500;
-    text-transform: uppercase; letter-spacing: .06em; text-align: center;
-    cursor: pointer; color: var(--muted); border: none; background: none;
-    border-bottom: 2px solid transparent; transition: all .12s; user-select: none;
+  /* ── tabs ───────────────────────────────────────── */
+  .tabs {
+    flex-shrink: 0; display: flex;
+    border-bottom: 1px solid var(--border); background: var(--bg);
   }
-  .tab:hover { color: var(--text); }
+  .tab {
+    flex: 1; height: 34px; display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: .09em;
+    cursor: pointer; color: var(--muted); border: none; background: none;
+    border-bottom: 2px solid transparent; transition: color .12s, border-color .12s; user-select: none;
+  }
+  .tab:hover { color: var(--muted2); }
   .tab.act[data-tab="trains"] { color: var(--proast); border-bottom-color: var(--proast); }
   .tab.act[data-tab="buses"]  { color: var(--bus);    border-bottom-color: var(--bus); }
+  .tab-pip {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: currentColor; opacity: .5; flex-shrink: 0;
+  }
+  .tab.act .tab-pip { opacity: 1; }
 
-  /* subhead */
+  /* ── subhead ────────────────────────────────────── */
   .subhead {
-    flex-shrink: 0; border-bottom: 1px solid var(--border); padding: 7px 12px;
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 5px; min-height: 38px;
+    flex-shrink: 0; border-bottom: 1px solid var(--border); padding: 6px 14px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 4px; min-height: 34px;
   }
   .sub-badge {
     font-family: var(--mono); font-size: 10px; color: var(--muted2);
-    background: var(--bg2); border: 1px solid var(--border2); padding: 1px 7px; border-radius: 2px; flex-shrink: 0;
+    letter-spacing: .04em; flex-shrink: 0; min-width: 56px;
   }
-  .pills { display: flex; gap: 4px; flex-wrap: wrap; }
+  .pills { display: flex; gap: 3px; flex-wrap: wrap; }
   button.pill {
-    font-family: var(--mono); font-size: 10px; padding: 3px 9px; border-radius: 2px;
-    border: 1px solid var(--border2); background: transparent; color: var(--muted2); cursor: pointer; transition: all .1s;
+    font-family: var(--mono); font-size: 10px; letter-spacing: .04em;
+    padding: 2px 9px; border-radius: 2px;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all .1s var(--ease);
   }
-  button.pill:hover { border-color: #555; color: var(--text); }
-  button.pill.act   { background: var(--proast); border-color: var(--proast); color: #000; font-weight: 500; }
-  button.pill.all.act { background: var(--text); border-color: var(--text); color: var(--bg); }
+  button.pill:hover { border-color: rgba(255,255,255,.18); color: var(--text); }
+  button.pill.act {
+    background: rgba(79,142,247,.12); border-color: rgba(79,142,247,.35);
+    color: var(--accent); font-weight: 500;
+  }
+  button.pill.all.act {
+    background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: var(--text);
+  }
 
-  /* bus search */
-  .search-wrap { position: relative; flex: 1; min-width: 140px; max-width: 280px; }
+  /* ── bus search ─────────────────────────────────── */
+  .search-wrap { position: relative; flex: 1; min-width: 140px; max-width: 260px; }
   input.search {
-    font-family: var(--mono); font-size: 12px; width: 100%;
-    background: var(--bg2); border: 1px solid var(--border2);
-    color: var(--text); padding: 5px 10px; border-radius: 3px; outline: none;
+    font-family: var(--mono); font-size: 11px; width: 100%;
+    background: var(--bg3); border: 1px solid var(--border2);
+    color: var(--text); padding: 4px 10px; border-radius: 3px; outline: none;
+    transition: border-color .12s;
   }
-  input.search:focus { border-color: #555; }
+  input.search:focus { border-color: rgba(79,142,247,.45); }
   input.search::placeholder { color: var(--muted); }
   .drop {
-    position: absolute; top: calc(100% + 3px); left: 0; right: 0;
-    background: var(--bg2); border: 1px solid var(--border2); border-radius: 3px;
-    max-height: 240px; overflow-y: auto; z-index: 600; display: none;
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+    background: var(--bg2); border: 1px solid var(--border2);
+    border-radius: 4px; max-height: 220px; overflow-y: auto; z-index: 600; display: none;
+    box-shadow: 0 8px 28px rgba(0,0,0,.55);
   }
   .drop.open { display: block; }
-  .dopt { padding: 8px 10px; font-family: var(--mono); font-size: 11px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .dopt { padding: 7px 10px; font-family: var(--mono); font-size: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .08s; }
   .dopt:last-child { border-bottom: none; }
   .dopt:hover { background: var(--bg3); }
-  .dopt-id   { color: var(--bus); font-weight: 500; }
-  .dopt-desc { display: block; color: var(--muted2); font-size: 10px; margin-top: 2px; }
-
-  .sel { display: none; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--bus); max-width: 220px; overflow: hidden; flex-shrink: 0; }
+  .dopt-id   { color: var(--bus); font-weight: 500; letter-spacing: .03em; }
+  .dopt-desc { display: block; color: var(--muted2); font-size: 9px; margin-top: 2px; }
+  .sel { display: none; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; color: var(--bus); max-width: 200px; overflow: hidden; flex-shrink: 0; }
   .sel.show { display: flex; }
-  .sel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sel-x { color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; flex-shrink: 0; }
+  .sel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: .02em; }
+  .sel-x { color: var(--muted); cursor: pointer; font-size: 14px; line-height: 1; flex-shrink: 0; transition: color .1s; }
   .sel-x:hover { color: var(--text); }
   .b-count { font-family: var(--mono); font-size: 10px; color: var(--muted2); margin-left: auto; flex-shrink: 0; }
 
-  /* views */
+  /* ── views ──────────────────────────────────────── */
   .view { display: none; flex: 1; flex-direction: column; overflow: hidden; }
   .view.show { display: flex; }
   .map { flex: 1; }
 
-  /* empty state */
+  /* ── empty state ────────────────────────────────── */
   .empty-state {
     flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 8px; font-family: var(--mono); font-size: 12px;
-    color: var(--muted); text-align: center; padding: 24px; line-height: 2;
+    justify-content: center; gap: 6px; font-family: var(--mono); font-size: 11px;
+    letter-spacing: .04em; color: var(--muted); text-align: center; padding: 24px; line-height: 2.2;
   }
 
-  /* legend */
+  /* ── legend ─────────────────────────────────────── */
   .legend {
-    position: absolute; bottom: 28px; right: 10px; z-index: 500;
-    background: rgba(14,14,14,.92); border: 1px solid var(--border2);
-    border-radius: 4px; padding: 8px 12px;
+    position: absolute; bottom: 24px; right: 12px; z-index: 500;
+    background: rgba(9,9,11,.85);
+    border: 1px solid rgba(255,255,255,.08);
+    border-top-color: rgba(255,255,255,.13);
+    border-radius: 6px; padding: 10px 14px;
     font-family: var(--mono); font-size: 10px; color: var(--muted2);
-    pointer-events: none; backdrop-filter: blur(4px);
+    pointer-events: none;
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    min-width: 154px;
   }
-  .legend-row { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+  .legend-label {
+    font-size: 9px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); display: block; margin-bottom: 6px;
+  }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; line-height: 1; }
   .legend-row:last-child { margin-bottom: 0; }
-  .leg-line { width: 18px; height: 3px; border-radius: 2px; flex-shrink: 0; }
-  .leg-dot  { width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff; flex-shrink: 0; }
+  .leg-line { width: 14px; height: 2px; border-radius: 1px; flex-shrink: 0; }
+  .leg-dot  { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.55); flex-shrink: 0; }
+  .legend-divider { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
 
-  /* popup */
+  /* ── popup ──────────────────────────────────────── */
   .leaflet-popup-content-wrapper {
-    background: var(--bg2); color: var(--text); border: 1px solid var(--border2);
-    border-radius: 5px; box-shadow: 0 4px 24px rgba(0,0,0,.65);
+    background: var(--bg2); color: var(--text);
+    border: 1px solid rgba(255,255,255,.08);
+    border-top-color: rgba(255,255,255,.14);
+    border-radius: 7px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06);
   }
   .leaflet-popup-tip { background: var(--bg2); }
-  .leaflet-popup-content { margin: 12px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.7; min-width: 160px; }
-  .pu-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
-  .pu-row  { display: flex; justify-content: space-between; gap: 16px; color: var(--muted2); font-size: 11px; }
-  .pu-row span:last-child { color: var(--text); }
-  .pu-tag  { display: inline-block; margin-top: 8px; font-size: 10px; padding: 2px 8px; border-radius: 2px; }
-  .tag-t   { background: rgba(167,139,250,.15); color: var(--proast); }
-  .tag-b   { background: rgba( 96,165,250,.15); color: var(--bus); }
+  .leaflet-popup-content { margin: 14px 16px; font-family: var(--mono); font-size: 11px; line-height: 1; min-width: 188px; }
+  .pu-name { font-size: 13px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 2px; }
+  .pu-sub  { font-size: 10px; color: var(--muted2); letter-spacing: .02em; margin-bottom: 10px; }
+  .pu-row  {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 20px;
+    color: var(--muted); font-size: 10px; letter-spacing: .03em;
+    border-bottom: 1px solid var(--border); padding: 4px 0;
+  }
+  .pu-row:last-of-type { border-bottom: none; }
+  .pu-row span:last-child { color: var(--text); font-weight: 500; text-align: right; }
+  .pu-divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+  .pu-note { font-size: 9px; color: var(--muted); margin-top: 8px; letter-spacing: .06em; text-transform: uppercase; }
   .ok   { color: var(--ok); }
   .warn { color: var(--warn); }
   .late { color: var(--late); }
 
-  @keyframes trainPulse {
-    0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
-    50%       { box-shadow: 0 0 0 5px transparent; opacity: .7; }
+  /* ── markers ────────────────────────────────────── */
+  @keyframes stationPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: .45; transform: scale(.88); }
   }
-  .t-marker-moving    { animation: none; }
-  .t-marker-stationary { animation: trainPulse 2.4s ease-in-out infinite; }
-
-  .pu-divider { border: none; border-top: 1px solid #333; margin: 8px 0; }
-  .pu-note    { font-size: 10px; color: var(--muted); margin-top: 6px; }
-  .delay-badge {
-    font-family: var(--mono); font-size: 10px;
-    background: rgba(251,191,36,.1); color: var(--warn);
-    border: 1px solid rgba(251,191,36,.3);
-    padding: 1px 7px; border-radius: 2px; flex-shrink: 0;
-  }
+  .t-marker-stationary { animation: stationPulse 3s ease-in-out infinite; }
+  .t-marker-moving     { animation: none; }
 </style>
 </head>
 <body>
@@ -166,15 +220,16 @@
 
   <div class="topbar">
     <a href="index.html" class="back">← gaps</a>
+    <span class="topbar-sep">/</span>
     <span class="topbar-title">athens-transit / live</span>
-    <span style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-left:8px;padding:2px 8px;border:1px solid var(--border2);border-radius:2px;flex-shrink:0">temporary · more additions soon</span>
+    <span class="topbar-tag">preview</span>
     <span class="delay-badge">~10s delayed</span>
     <div class="conn"><div class="dot" id="dot"></div><span id="s-text">connecting…</span></div>
   </div>
 
   <div class="tabs">
-    <button class="tab act" data-tab="trains" onclick="switchTab('trains')">🚆 Trains</button>
-    <button class="tab"     data-tab="buses"  onclick="switchTab('buses')">🚌 Buses</button>
+    <button class="tab act" data-tab="trains" onclick="switchTab('trains')"><span class="tab-pip"></span>Trains</button>
+    <button class="tab"     data-tab="buses"  onclick="switchTab('buses')"><span class="tab-pip"></span>Buses</button>
   </div>
 
   <!-- TRAINS -->
@@ -188,13 +243,16 @@
     <div style="position:relative;flex:1;display:flex;flex-direction:column;">
       <div id="train-map" class="map"></div>
       <div class="legend" id="t-legend">
-        <div class="legend-row"><div class="leg-line" style="background:#a78bfa"></div>A1 Πειραιάς↔Αεροδρ.</div>
-        <div class="legend-row"><div class="leg-line" style="background:#c084fc"></div>A2 Άνω Λιόσια↔Αεροδρ.</div>
-        <div class="legend-row"><div class="leg-line" style="background:#fbbf24"></div>A3 Χαλκίδα</div>
-        <div class="legend-row"><div class="leg-line" style="background:#34d399"></div>A4 Κιάτο</div>
-        <div class="legend-row" style="margin-top:6px"><div class="leg-dot" style="background:#a78bfa"></div>on time</div>
-        <div class="legend-row"><div class="leg-dot" style="background:#fbbf24"></div>delayed</div>
-        <div class="legend-row"><div class="leg-dot" style="background:#f87171"></div>&gt;2 min late</div>
+        <span class="legend-label">corridors</span>
+        <div class="legend-row"><div class="leg-line" style="background:#8b7cf6"></div>A1 Πειραιάς — Αεροδρ.</div>
+        <div class="legend-row"><div class="leg-line" style="background:#b09af8"></div>A2 Άνω Λιόσια — Αεροδρ.</div>
+        <div class="legend-row"><div class="leg-line" style="background:#f5a623"></div>A3 Χαλκίδα</div>
+        <div class="legend-row"><div class="leg-line" style="background:#2dd4a0"></div>A4 Κιάτο</div>
+        <hr class="legend-divider">
+        <span class="legend-label">delay</span>
+        <div class="legend-row"><div class="leg-dot" style="background:#8b7cf6"></div>on time</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#f5a623"></div>delayed</div>
+        <div class="legend-row"><div class="leg-dot" style="background:#f06b6b"></div>&gt;2 min late</div>
       </div>
     </div>
   </div>
@@ -291,67 +349,53 @@ const seenCorr = new Set();
 let cFilter = 'all';
 
 function tColor(d) {
-  if (d > 120) return '#f87171';
-  if (d > 0)   return '#fbbf24';
-  return '#a78bfa';
+  if (d > 120) return '#f06b6b';
+  if (d > 0)   return '#f5a623';
+  return '#8b7cf6';
 }
 function tIcon(speed, delay) {
   const moving = (speed||0) > 0.5;
-  const sz = moving ? 24 : 16;
+  const sz = moving ? 20 : 13;
   const c  = tColor(delay||0);
   const cls = moving ? 't-marker-moving' : 't-marker-stationary';
-  const inner = moving
-    ? `<svg width="11" height="11" viewBox="0 0 11 11" fill="none" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
-        <rect x="1" y="3" width="9" height="5" rx="1.5" fill="white" opacity="0.9"/>
-        <rect x="2" y="5" width="2" height="2" rx=".5" fill="${c}"/>
-        <rect x="7" y="5" width="2" height="2" rx=".5" fill="${c}"/>
-        <rect x="1" y="3" width="5" height="2" rx=".5" fill="white" opacity="0.5"/>
-       </svg>`
-    : '';
+  const border = moving ? 'rgba(255,255,255,.82)' : 'rgba(255,255,255,.45)';
+  const shadow = moving
+    ? `0 0 0 3px ${c}1a, 0 2px 10px ${c}55`
+    : `0 0 6px ${c}44`;
   return L.divIcon({
     className: '',
-    html: `<div class="${cls}" style="
-      width:${sz}px;height:${sz}px;
-      background:${c};
-      border:2.5px solid rgba(255,255,255,0.9);
-      border-radius:50%;
-      box-shadow:0 0 ${moving?16:8}px ${c}, 0 0 ${moving?6:3}px rgba(255,255,255,0.4);
-      position:relative;
-      transition:all .5s;
-      color:${c};
-    ">${inner}</div>`,
+    html: `<div class="${cls}" style="width:${sz}px;height:${sz}px;background:${c};border:2px solid ${border};border-radius:50%;box-shadow:${shadow};transition:all .6s cubic-bezier(0.16,1,0.3,1);"></div>`,
     iconSize: [sz,sz], iconAnchor: [sz/2,sz/2]
   });
 }
 function fDelay(s) {
   if (!s || s === 0) return '<span class="ok">on time</span>';
-  const m = Math.round(Math.abs(s)/60);
-  const secs = Math.abs(s) % 60;
-  const label = m > 0 ? `${m}m ${secs}s` : `${secs}s`;
+  const abs = Math.abs(s);
+  const m = Math.floor(abs/60), sec = abs % 60;
+  const label = m > 0 ? `${m}m ${sec}s` : `${sec}s`;
   return `<span class="${s>0?'late':'ok'}">${s>0?'+':'-'}${label}</span>`;
 }
 function fCourse(deg) {
-  if (deg == null) return '—';
+  if (deg == null) return null;
   const dirs = ['N','NE','E','SE','S','SW','W','NW'];
   return dirs[Math.round(deg/45) % 8] + ` ${Math.round(deg)}°`;
 }
 function tPopup(t) {
   const spd = Math.round((t.speed||0)*3.6);
   const moving = spd > 2;
+  const hdg = fCourse(t.course);
+  const ts  = t.timestamp ? new Date(t.timestamp).toLocaleTimeString('el-GR',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : null;
   return `
-    <div class="pu-name">🚆 Train ${t.trainNumber||'—'}</div>
-    ${(t.origin||t.destination)?`<div class="pu-row"><span>${t.origin||'?'}</span><span>→ ${t.destination||'?'}</span></div>`:''}
-    <hr class="pu-divider">
-    <div class="pu-row"><span>Status</span><span>${moving?'<span class="ok">moving</span>':'<span class="warn">stationary</span>'}</span></div>
-    <div class="pu-row"><span>Delay</span><span>${fDelay(t.delay)}</span></div>
-    <div class="pu-row"><span>Speed</span><span>${spd} km/h</span></div>
-    ${t.course!=null?`<div class="pu-row"><span>Heading</span><span>${fCourse(t.course)}</span></div>`:''}
-    ${t.altitude?`<div class="pu-row"><span>Altitude</span><span>${Math.round(t.altitude)} m</span></div>`:''}
-    <hr class="pu-divider">
-    ${t.corridor?`<div class="pu-row"><span>Corridor</span><span>${t.corridor}</span></div>`:''}
-    ${t.trainId||t.id?`<div class="pu-row"><span>ID</span><span style="font-family:var(--mono);font-size:10px">${t.trainId||t.id}</span></div>`:''}
-    ${t.timestamp?`<div class="pu-row"><span>Last fix</span><span>${new Date(t.timestamp).toLocaleTimeString()}</span></div>`:''}
-    <div class="pu-note">⚠ data is ~10s delayed</div>
+    <div class="pu-name">${t.trainNumber || 'Train'}</div>
+    ${(t.origin||t.destination)?`<div class="pu-sub">${t.origin||'—'} → ${t.destination||'—'}</div>`:`<div class="pu-sub" style="margin-bottom:10px"></div>`}
+    <div class="pu-row"><span>status</span><span>${moving?`<span class="ok">moving</span>`:`<span class="warn">stationary</span>`}</span></div>
+    <div class="pu-row"><span>delay</span><span>${fDelay(t.delay)}</span></div>
+    <div class="pu-row"><span>speed</span><span>${spd} km/h</span></div>
+    ${hdg?`<div class="pu-row"><span>heading</span><span>${hdg}</span></div>`:''}
+    ${t.altitude?`<div class="pu-row"><span>altitude</span><span>${Math.round(t.altitude)} m</span></div>`:''}
+    ${t.corridor?`<div class="pu-row"><span>corridor</span><span>${t.corridor.toLowerCase()}</span></div>`:''}
+    ${ts?`<div class="pu-row"><span>last fix</span><span>${ts}</span></div>`:''}
+    <div class="pu-note">source: railway.gov.gr · ~10s delay</div>
   `;
 }
 function addCorrPill(c) {
@@ -431,7 +475,7 @@ async function loadLines() {
 function bIcon() {
   return L.divIcon({
     className: '',
-    html: '<div style="width:13px;height:13px;background:#60a5fa;border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 6px #60a5fa99"></div>',
+    html: '<div style="width:13px;height:13px;background:#4f8ef7;border:2px solid rgba(255,255,255,.75);border-radius:50%;box-shadow:0 0 0 2px rgba(79,142,247,.2),0 2px 8px rgba(79,142,247,.4)"></div>',
     iconSize:[13,13], iconAnchor:[6,6]
   });
 }
