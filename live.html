@@ -330,22 +330,25 @@ function switchTab(name) {
 const tMap = L.map('train-map', { center: ATHENS, zoom: 10, zoomControl: true });
 L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(tMap);
 
-// Real OSM rail geometry via Overpass POST
-fetch('https://overpass-api.de/api/interpreter', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  body: 'data=' + encodeURIComponent('[out:json][timeout:30];(way["railway"="rail"](35.0,19.5,42.0,28.5););out geom;')
-})
-.then(r => r.json())
-.then(d => {
-  d.elements.forEach(way => {
-    if (!way.geometry) return;
-    L.polyline(way.geometry.map(p => [p.lat, p.lon]), {
-      color: '#4a4888', weight: 2, opacity: 0.7, smoothFactor: 1
-    }).addTo(tMap);
-  });
-})
-.catch(() => {});
+// Athens-Thessaloniki main line (hardcoded — Overpass doesn't cover full Greece)
+const NORTH_LINE = [
+  [37.9931,23.7203],[38.0451,23.7932],[38.0600,23.7560],[38.0803,23.7438],
+  [38.2010,23.6890],[38.3500,23.1200],[38.5900,22.6900],[38.8300,22.4000],
+  [38.8900,22.4300],[39.1200,22.3000],[39.3600,22.2800],[39.6340,22.4150],
+  [39.8900,22.3500],[40.1500,22.2900],[40.3200,22.1800],[40.5200,22.3000],
+  [40.6200,22.5800],[40.6400,22.9400]
+];
+L.polyline(NORTH_LINE, { color: '#4a4888', weight: 2, opacity: 0.65, smoothFactor: 2 }).addTo(tMap);
+
+// Real OSM geometry for Athens area (static file, no CORS issues)
+fetch('data/rail-tracks.json')
+  .then(r => r.json())
+  .then(lines => {
+    lines.forEach(coords => {
+      L.polyline(coords, { color: '#4a4888', weight: 2, opacity: 0.7, smoothFactor: 1 }).addTo(tMap);
+    });
+  })
+  .catch(() => {});
 
 // Corridor colored lines on top + station dots
 Object.entries(STATIONS).forEach(([key, c]) => {
