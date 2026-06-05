@@ -330,10 +330,27 @@ function switchTab(name) {
 const tMap = L.map('train-map', { center: ATHENS, zoom: 10, zoomControl: true });
 L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(tMap);
 
-// Corridor colored lines + station dots
+// Real OSM rail geometry via Overpass POST
+fetch('https://overpass-api.de/api/interpreter', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  body: 'data=' + encodeURIComponent('[out:json][timeout:30];(way["railway"="rail"](35.0,19.5,42.0,28.5););out geom;')
+})
+.then(r => r.json())
+.then(d => {
+  d.elements.forEach(way => {
+    if (!way.geometry) return;
+    L.polyline(way.geometry.map(p => [p.lat, p.lon]), {
+      color: '#4a4888', weight: 2, opacity: 0.7, smoothFactor: 1
+    }).addTo(tMap);
+  });
+})
+.catch(() => {});
+
+// Corridor colored lines on top + station dots
 Object.entries(STATIONS).forEach(([key, c]) => {
   const latlngs = c.stops.map(([,lat,lng]) => [lat,lng]);
-  L.polyline(latlngs, { color: c.color, weight: 3, opacity: 0.75, smoothFactor: 1.5 }).addTo(tMap);
+  L.polyline(latlngs, { color: c.color, weight: 3, opacity: 0.85, smoothFactor: 1.5 }).addTo(tMap);
   c.stops.forEach(([name, lat, lng]) => {
     L.circleMarker([lat, lng], {
       radius: 4, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2
