@@ -330,24 +330,24 @@ function switchTab(name) {
 const tMap = L.map('train-map', { center: ATHENS, zoom: 10, zoomControl: true });
 L.tileLayer(TILES, { attribution: ATTR, maxZoom: 19 }).addTo(tMap);
 
-// Athens-Thessaloniki main line (hardcoded — Overpass doesn't cover full Greece)
-const NORTH_LINE = [
-  [37.9931,23.7203],[38.0451,23.7932],[38.0600,23.7560],[38.0803,23.7438],
-  [38.2010,23.6890],[38.3500,23.1200],[38.5900,22.6900],[38.8300,22.4000],
-  [38.8900,22.4300],[39.1200,22.3000],[39.3600,22.2800],[39.6340,22.4150],
-  [39.8900,22.3500],[40.1500,22.2900],[40.3200,22.1800],[40.5200,22.3000],
-  [40.6200,22.5800],[40.6400,22.9400]
-];
-L.polyline(NORTH_LINE, { color: '#4a4888', weight: 2, opacity: 0.65, smoothFactor: 2 }).addTo(tMap);
-
-// Real OSM geometry for Athens area (static file, no CORS issues)
-fetch('data/rail-tracks.json')
+// Real corridor geometry from OSM relations (static file, per-corridor colors)
+fetch('data/corridors.json')
   .then(r => r.json())
-  .then(lines => {
-    lines.forEach(coords => {
-      L.polyline(coords, { color: '#7b7bcc', weight: 2.5, opacity: 0.85, smoothFactor: 1 }).addTo(tMap);
+  .then(corridors => {
+    // Draw main line first (bottom layer)
+    const main = corridors['MAIN'];
+    if (main) main.ways.forEach(coords =>
+      L.polyline(coords, { color: main.color, weight: 2, opacity: 0.5, smoothFactor: 1 }).addTo(tMap)
+    );
+    // Draw Proastiakos corridors on top
+    ['PIRAIR','LIOAIR','E85','A4'].forEach(key => {
+      const c = corridors[key];
+      if (!c) return;
+      c.ways.forEach(coords =>
+        L.polyline(coords, { color: c.color, weight: 2.5, opacity: 0.85, smoothFactor: 1 }).addTo(tMap)
+      );
     });
-    // Station dots on top after tracks load
+    // Station dots on top
     Object.entries(STATIONS).forEach(([key, c]) => {
       c.stops.forEach(([name, lat, lng]) => {
         L.circleMarker([lat, lng], {
@@ -358,7 +358,6 @@ fetch('data/rail-tracks.json')
     });
   })
   .catch(() => {
-    // Fallback: straight corridor lines if file fails
     Object.entries(STATIONS).forEach(([key, c]) => {
       L.polyline(c.stops.map(([,lat,lng]) => [lat,lng]), { color: c.color, weight: 2.5, opacity: 0.8 }).addTo(tMap);
       c.stops.forEach(([name, lat, lng]) => {
