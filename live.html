@@ -345,22 +345,29 @@ fetch('data/rail-tracks.json')
   .then(r => r.json())
   .then(lines => {
     lines.forEach(coords => {
-      L.polyline(coords, { color: '#4a4888', weight: 2, opacity: 0.7, smoothFactor: 1 }).addTo(tMap);
+      L.polyline(coords, { color: '#7b7bcc', weight: 2.5, opacity: 0.85, smoothFactor: 1 }).addTo(tMap);
+    });
+    // Station dots on top after tracks load
+    Object.entries(STATIONS).forEach(([key, c]) => {
+      c.stops.forEach(([name, lat, lng]) => {
+        L.circleMarker([lat, lng], {
+          radius: 5, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2
+        }).bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`)
+          .addTo(tMap);
+      });
     });
   })
-  .catch(() => {});
-
-// Corridor colored lines on top + station dots
-Object.entries(STATIONS).forEach(([key, c]) => {
-  const latlngs = c.stops.map(([,lat,lng]) => [lat,lng]);
-  L.polyline(latlngs, { color: c.color, weight: 3, opacity: 0.85, smoothFactor: 1.5 }).addTo(tMap);
-  c.stops.forEach(([name, lat, lng]) => {
-    L.circleMarker([lat, lng], {
-      radius: 4, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2
-    }).bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`)
-      .addTo(tMap);
+  .catch(() => {
+    // Fallback: straight corridor lines if file fails
+    Object.entries(STATIONS).forEach(([key, c]) => {
+      L.polyline(c.stops.map(([,lat,lng]) => [lat,lng]), { color: c.color, weight: 2.5, opacity: 0.8 }).addTo(tMap);
+      c.stops.forEach(([name, lat, lng]) => {
+        L.circleMarker([lat, lng], { radius: 5, color: c.color, fillColor: '#09090b', fillOpacity: 1, weight: 2 })
+          .bindPopup(`<div class="pu-name">${name}</div><div class="pu-sub">${key.toLowerCase()}</div>`).addTo(tMap);
+      });
+    });
   });
-});
+
 
 // live train markers
 const tMarkers = {};
