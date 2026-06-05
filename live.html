@@ -463,27 +463,46 @@ function onTrain(t) {
     tMarkers[key] = m;
   }
 }
-function pollTrains() {
+async function pollTrains() {
   const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
   dot.className = 'dot'; stxt.textContent = 'fetching…';
-  const es = new EventSource(TRAIN_PROXY);
-  const timeout = setTimeout(() => { es.close(); dot.className = 'dot err'; stxt.textContent = 'no data'; schedPoll(); }, 10000);
-  es.addEventListener('trainPositionsUx', e => {
-    clearTimeout(timeout);
-    es.close();
-    try {
-      const d = JSON.parse(e.data);
-      if (d.positions && d.positions.length) {
-        d.positions.forEach(onTrain);
-        updTCount();
-        dot.className = 'dot on'; stxt.textContent = 'live';
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const r = await fetch(TRAIN_PROXY, { signal: ctrl.signal });
+    const reader = r.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '', found = false;
+    while (!found) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      for (const block of parts) {
+        let type = '', data = '';
+        for (const line of block.split('\n')) {
+          if (line.startsWith('event:')) type = line.slice(6).trim();
+          if (line.startsWith('data:'))  data = line.slice(5).trim();
+        }
+        if (type === 'trainPositionsUx' && data) {
+          clearTimeout(timeout); ctrl.abort(); found = true;
+          const d = JSON.parse(data);
+          if (d.positions && d.positions.length) {
+            d.positions.forEach(onTrain); updTCount();
+            dot.className = 'dot on'; stxt.textContent = 'live';
+          }
+          break;
+        }
       }
-    } catch {}
-    schedPoll();
-  });
-  es.onerror = () => { clearTimeout(timeout); es.close(); dot.className = 'dot err'; stxt.textContent = 'error'; schedPoll(); };
+    }
+    if (!found) { dot.className = 'dot err'; stxt.textContent = 'no data'; }
+  } catch(e) {
+    if (e.name !== 'AbortError') { dot.className = 'dot err'; stxt.textContent = 'error'; }
+  }
+  setTimeout(pollTrains, 15000);
 }
-function schedPoll() { setTimeout(pollTrains, 15000); }
+function schedPoll() {}
 
 function connectTrains() {
   const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
