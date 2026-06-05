@@ -277,7 +277,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const IS_LOCAL    = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-const TRAIN_STREAM = IS_LOCAL ? 'http://localhost:8765/stream' : 'https://corsproxy.io/?https://railway.gov.gr/api/train-stream';
+const TRAIN_STREAM  = IS_LOCAL ? 'http://localhost:8765/stream' : null;
+const TRAIN_PROXY   = 'https://corsproxy.io/?https://railway.gov.gr/api/train-stream';
 const OASA_BASE   = 'https://telematics.oasa.gr/api/';
 const TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const ATTR  = '© OpenStreetMap © CARTO';
@@ -462,8 +463,31 @@ function onTrain(t) {
     tMarkers[key] = m;
   }
 }
+function pollTrains() {
+  const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
+  dot.className = 'dot'; stxt.textContent = 'fetching…';
+  const es = new EventSource(TRAIN_PROXY);
+  const timeout = setTimeout(() => { es.close(); dot.className = 'dot err'; stxt.textContent = 'no data'; schedPoll(); }, 10000);
+  es.addEventListener('trainPositionsUx', e => {
+    clearTimeout(timeout);
+    es.close();
+    try {
+      const d = JSON.parse(e.data);
+      if (d.positions && d.positions.length) {
+        d.positions.forEach(onTrain);
+        updTCount();
+        dot.className = 'dot on'; stxt.textContent = 'live';
+      }
+    } catch {}
+    schedPoll();
+  });
+  es.onerror = () => { clearTimeout(timeout); es.close(); dot.className = 'dot err'; stxt.textContent = 'error'; schedPoll(); };
+}
+function schedPoll() { setTimeout(pollTrains, 15000); }
+
 function connectTrains() {
   const dot = document.getElementById('dot'), stxt = document.getElementById('s-text');
+  if (!TRAIN_STREAM) { pollTrains(); return; }
   const es  = new EventSource(TRAIN_STREAM);
   es.addEventListener('trainPositionsUx', e => {
     try {
